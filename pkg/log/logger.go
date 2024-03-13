@@ -12,7 +12,11 @@ func init() {
 	log.SetLevel(log.InfoLevel)
 }
 
-func GetLog() *log.Entry {
+func GetLog(ignorePath ...bool) *log.Entry {
+	needPath := true
+	if len(ignorePath) > 0 {
+		needPath = !ignorePath[0]
+	}
 	var fileName, funcName string
 	pc, file, _, ok := runtime.Caller(1)
 
@@ -28,8 +32,12 @@ func GetLog() *log.Entry {
 	logger.SetOutput(os.Stdout)
 	logger.SetLevel(log.InfoLevel)
 
-	return logger.WithFields(log.Fields{
-		"file": fileName,
-		"func": funcName,
-	})
+	if needPath {
+		return logger.WithFields(log.Fields{
+			"file": fileName,
+			"func": funcName,
+		})
+	}
+	return logger.WithFields(log.Fields{})
+
 }

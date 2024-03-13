@@ -1,9 +1,9 @@
 package main
 
 import (
-	"barista/pkg/log"
+	"barista/internal"
 )
 
 func main() {
-	log.GetLog().Info("Trying to log")
+	internal.Run()
 }
