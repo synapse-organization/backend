@@ -2,6 +2,7 @@ package log
 
 import (
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 	"os"
 	"runtime"
 	"strings"
@@ -18,7 +19,7 @@ func GetLog(ignorePath ...bool) *log.Entry {
 		needPath = !ignorePath[0]
 	}
 	var fileName, funcName string
-	pc, file, _, ok := runtime.Caller(1)
+	pc, file, line, ok := runtime.Caller(1)
 
 	if ok {
 		path := strings.Split(file, "/")
@@ -34,7 +35,7 @@ func GetLog(ignorePath ...bool) *log.Entry {
 
 	if needPath {
 		return logger.WithFields(log.Fields{
-			"file": fileName,
+			"file": fileName + ":" + cast.ToString(line),
 			"func": funcName,
 		})
 	}
