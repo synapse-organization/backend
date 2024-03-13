@@ -1,0 +1,43 @@
+version: '2.1'
+
+volumes:
+  postgres_data:
+  cass_data:
+  zoo_data:
+  broker_data:
+
+services:
+  backend_app:
+    image: backend:latest
+    container_name: 'backend_app'
+    restart: always
+    ports:
+      - 8080:8080
+    deploy:
+        restart_policy:
+            condition: on-failure
+            delay: 5s
+            max_attempts: 5
+        resources:
+            limits:
+              memory: 200M
+  postgres_backend:
+    image: postgres:16.1-alpine3.19
+    volumes:
+     - postgres_data:/var
+    restart: always
+    container_name: 'postgres_backend'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - 5432:5432
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 200M
