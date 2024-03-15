@@ -1,18 +1,42 @@
 package http
 
-import "github.com/gin-gonic/gin"
+import (
+	"barista/internal/modules"
+	"barista/pkg/log"
+	"barista/pkg/models"
+	"barista/pkg/utils"
+	"github.com/gin-gonic/gin"
+)
 
 type User struct {
+	Handler *modules.UserHandler
 }
 
-func (userHandler User) GetUsers(c *gin.Context) {
-	c.JSON(200, gin.H{"users": "get"})
+func (u User) GetSignIn(ctx *gin.Context) {
+	ctx.JSON(200, gin.H{"users": "sing in"})
 }
 
-func (userHandler User) GetSignIn(c *gin.Context) {
-	c.JSON(200, gin.H{"users": "singin"})
-}
+func (u User) PostSignUp(ctx *gin.Context) {
+	var data models.User
 
-func (userHandler User) PostSignUp(c *gin.Context) {
-	c.JSON(200, gin.H{"users": "signup"})
+	err := ctx.ShouldBindJSON(&data)
+	if err != nil {
+		log.GetLog().Errorf("Unable to bind json. error: %v", err)
+		ctx.JSON(400, gin.H{"error": "Unable to bind json"})
+		return
+	}
+
+	err = u.Handler.SignUp(ctx, &data)
+	if err != nil {
+		errValue := err.Error()
+		if !utils.IsCommonError(err) {
+			log.GetLog().Errorf("Unable to sign up. error: %v", err)
+			errValue = "Unable to sign up"
+		}
+
+		ctx.JSON(500, gin.H{"error": errValue})
+		return
+	}
+
+	ctx.JSON(200, gin.H{"users": "signup"})
 }
