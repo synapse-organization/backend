@@ -9,7 +9,7 @@ func (userHandler User) GetUsers(c *gin.Context) {
 	c.JSON(200, gin.H{"users": "get"})
 }
 
-func (userHandler User) GetSingIn(c *gin.Context) {
+func (userHandler User) GetSignIn(c *gin.Context) {
 	c.JSON(200, gin.H{"users": "singin"})
 }
 
