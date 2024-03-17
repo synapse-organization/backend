@@ -15,11 +15,11 @@ var (
 	TimeOut = 5 * time.Second
 )
 
-type User struct {
+type Auth struct {
 	Handler *modules.UserHandler
 }
 
-func (u User) PostLogin(c *gin.Context) {
+func (u Auth) PostLogin(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
@@ -48,7 +48,7 @@ func (u User) PostLogin(c *gin.Context) {
 	return
 }
 
-func (u User) PostSignUp(c *gin.Context) {
+func (u Auth) PostSignUp(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
