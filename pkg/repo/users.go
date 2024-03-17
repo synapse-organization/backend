@@ -14,8 +14,8 @@ func init() {
 
 type UsersRepo interface {
 	Create(ctx context.Context, user *models.User) error
-	GetByID(ctx context.Context, id int64) (*models.User, error)
-	DeleteByID(ctx context.Context, id int64) error
+	GetByID(ctx context.Context, id int32) (*models.User, error)
+	DeleteByID(ctx context.Context, id int32) error
 }
 
 type UserRepoImp struct {
@@ -39,23 +39,23 @@ func NewUserRepoImp(postgres *pgx.Conn) *UserRepoImp {
 }
 
 func (u *UserRepoImp) Create(ctx context.Context, user *models.User) error {
-	_, err := u.postgres.Exec(ctx, "INSERT INTO users (id, first_name, last_name, email, password, phone, sex) VALUES ($1, $2, $3, $4, $5, $6, $7)", user.ID, user.FistName, user.LastName, user.Email, user.Password, user.Phone, user.Sex)
+	_, err := u.postgres.Exec(ctx, "INSERT INTO users (id, first_name, last_name, email, password, phone, sex) VALUES ($1, $2, $3, $4, $5, $6, $7)", user.ID, user.FirstName, user.LastName, user.Email, user.Password, user.Phone, user.Sex)
 	if err != nil {
 		log.GetLog().Errorf("Unable to intser user. error: %v", err)
 	}
 	return err
 }
 
-func (u *UserRepoImp) GetByID(ctx context.Context, id int64) (*models.User, error) {
+func (u *UserRepoImp) GetByID(ctx context.Context, id int32) (*models.User, error) {
 	var user models.User
-	err := u.postgres.QueryRow(ctx, "SELECT id, first_name, last_name, email, password, phone, sex FROM users WHERE id = $1", id).Scan(&user.ID, &user.FistName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex)
+	err := u.postgres.QueryRow(ctx, "SELECT id, first_name, last_name, email, password, phone, sex FROM users WHERE id = $1", id).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get user by id. error: %v", err)
 	}
 	return &user, err
 }
 
-func (u *UserRepoImp) DeleteByID(ctx context.Context, id int64) error {
+func (u *UserRepoImp) DeleteByID(ctx context.Context, id int32) error {
 	_, err := u.postgres.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
 	if err != nil {
 		log.GetLog().Errorf("Unable to delete user by id. error: %v", err)
