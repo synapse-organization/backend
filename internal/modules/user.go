@@ -14,8 +14,19 @@ type UserHandler struct {
 	UserRepo repo.UsersRepo
 }
 
-func (u UserHandler) SignIn(ctx *gin.Context, user *models.User) error {
-	// c.JSON(200, gin.H{"users": "singin"})
+func (u UserHandler) Login(ctx *gin.Context, user *models.User) error {
+	foundUser, err := u.UserRepo.GetByID(ctx, user.ID)
+	if err != nil {
+		log.GetLog().Errorf("Incorrect name or password. error: %v", err)
+		return err
+	}
+
+	if !utils.CheckPasswordHash(foundUser.Password, user.Password) {
+		return errors.ErrPasswordIncorrect.Error()
+	}
+
+	token, refreshToken, _ := utils.TokenGenerator(foundUser.Email, foundUser.FirstName, foundUser.LastName, string(foundUser.ID))
+	utils.UpdateAllTokens(token, refreshToken, string(foundUser.ID))
 
 	return nil
 }
@@ -35,7 +46,7 @@ func (u UserHandler) SignUp(ctx *gin.Context, user *models.User) error {
 		return errors.ErrPasswordInvalid.Error()
 	}
 
-	if !utils.CheckNameValidity(user.FistName) {
+	if !utils.CheckNameValidity(user.FirstName) {
 		return errors.ErrFirstNameInvalid.Error()
 	}
 
