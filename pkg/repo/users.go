@@ -15,6 +15,7 @@ func init() {
 type UsersRepo interface {
 	Create(ctx context.Context, user *models.User) error
 	GetByID(ctx context.Context, id int32) (*models.User, error)
+	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	DeleteByID(ctx context.Context, id int32) error
 }
 
@@ -49,6 +50,15 @@ func (u *UserRepoImp) Create(ctx context.Context, user *models.User) error {
 func (u *UserRepoImp) GetByID(ctx context.Context, id int32) (*models.User, error) {
 	var user models.User
 	err := u.postgres.QueryRow(ctx, "SELECT id, first_name, last_name, email, password, phone, sex FROM users WHERE id = $1", id).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get user by id. error: %v", err)
+	}
+	return &user, err
+}
+
+func (u *UserRepoImp) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+	var user models.User
+	err := u.postgres.QueryRow(ctx, "SELECT id, first_name, last_name, email, password, phone, sex FROM users WHERE email = $1", email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get user by id. error: %v", err)
 	}

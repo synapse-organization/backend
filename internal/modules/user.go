@@ -15,13 +15,13 @@ type UserHandler struct {
 }
 
 func (u UserHandler) Login(ctx *gin.Context, user *models.User) error {
-	foundUser, err := u.UserRepo.GetByID(ctx, user.ID)
+	foundUser, err := u.UserRepo.GetByEmail(ctx, user.Email)
 	if err != nil {
 		log.GetLog().Errorf("Incorrect name or password. error: %v", err)
 		return err
 	}
 
-	if !utils.CheckPasswordHash(foundUser.Password, user.Password) {
+	if !utils.CheckPasswordHash(user.Password, foundUser.Password) {
 		return errors.ErrPasswordIncorrect.Error()
 	}
 
