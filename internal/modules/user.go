@@ -6,7 +6,7 @@ import (
 	"barista/pkg/models"
 	"barista/pkg/repo"
 	"barista/pkg/utils"
-	"github.com/gin-gonic/gin"
+	"context"
 	"math/rand"
 )
 
@@ -14,7 +14,7 @@ type UserHandler struct {
 	UserRepo repo.UsersRepo
 }
 
-func (u UserHandler) Login(ctx *gin.Context, user *models.User) error {
+func (u UserHandler) Login(ctx context.Context, user *models.User) error {
 	foundUser, err := u.UserRepo.GetByEmail(ctx, user.Email)
 	if err != nil {
 		log.GetLog().Errorf("Incorrect name or password. error: %v", err)
@@ -25,13 +25,13 @@ func (u UserHandler) Login(ctx *gin.Context, user *models.User) error {
 		return errors.ErrPasswordIncorrect.Error()
 	}
 
-	token, refreshToken, _ := utils.TokenGenerator(foundUser.Email, foundUser.FirstName, foundUser.LastName, string(foundUser.ID))
+	token, refreshToken, err := utils.TokenGenerator(foundUser.Email, foundUser.FirstName, foundUser.LastName, string(foundUser.ID))
 	utils.UpdateAllTokens(token, refreshToken, string(foundUser.ID))
 
 	return nil
 }
 
-func (u UserHandler) SignUp(ctx *gin.Context, user *models.User) error {
+func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
 	user.ID = rand.Int31()
 
 	if !utils.CheckEmailValidity(user.Email) {

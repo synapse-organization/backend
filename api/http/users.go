@@ -5,30 +5,33 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"barista/pkg/utils"
-	"github.com/gin-gonic/gin"
-	"time"
 	"context"
+	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
+)
+
+var (
+	TimeOut = 5 * time.Second
 )
 
 type User struct {
 	Handler *modules.UserHandler
 }
 
-func (u User) PostLogin(ctx *gin.Context) {
-	var _, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+func (u User) PostLogin(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
-	
+
 	var user models.User
-	err := ctx.ShouldBindJSON(&user)
+	err := c.ShouldBindJSON(&user)
 	if err != nil {
 		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
 
 	err = u.Handler.Login(ctx, &user)
-	defer cancel()
 	if err != nil {
 		errValue := err.Error()
 		if !utils.IsCommonError(err) {
@@ -36,20 +39,25 @@ func (u User) PostLogin(ctx *gin.Context) {
 			errValue = "Unable to login"
 		}
 
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": errValue})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errValue})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"users": "login"})
+	// TODO: return jwt token
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
 }
 
-func (u User) PostSignUp(ctx *gin.Context) {
+func (u User) PostSignUp(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
 	var data models.User
 
-	err := ctx.ShouldBindJSON(&data)
+	err := c.ShouldBindJSON(&data)
 	if err != nil {
 		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		ctx.JSON(400, gin.H{"error": "Unable to bind json"})
+		c.JSON(400, gin.H{"error": "Unable to bind json"})
 		return
 	}
 
@@ -61,9 +69,10 @@ func (u User) PostSignUp(ctx *gin.Context) {
 			errValue = "Unable to sign up"
 		}
 
-		ctx.JSON(500, gin.H{"error": errValue})
+		c.JSON(500, gin.H{"error": errValue})
 		return
 	}
 
-	ctx.JSON(200, gin.H{"users": "signup"})
+	c.JSON(200, gin.H{"status": "ok"})
+	return
 }
