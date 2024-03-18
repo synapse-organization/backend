@@ -30,10 +30,12 @@ func (s *Service) AddRoutes(group *gin.RouterGroup, route ...models.Route) {
 	}
 }
 
-func (s *Service) AddStructRoutes(group *gin.RouterGroup, route interface{}) {
+func (s *Service) AddStructRoutes(group *gin.RouterGroup, route interface{}, middleware ...gin.HandlerFunc) {
 	routeType := reflect.TypeOf(route)
 	if routeType.Kind() == reflect.Struct {
 		routeGroup := group.Group(strings.ToLower(routeType.Name()))
+
+		routeGroup.Use(middleware...)
 
 		log.GetLog(true).WithField("BasePath", routeGroup.BasePath()).Info("Registering group")
 		for i := 0; i < routeType.NumMethod(); i++ {

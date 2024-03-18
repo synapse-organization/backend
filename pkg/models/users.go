@@ -10,7 +10,7 @@ const (
 
 type User struct {
 	ID       int32  `json:"id,omitempty"`
-	FistName string `json:"first_name,omitempty"`
+	FirstName string `json:"first_name,omitempty"`
 	LastName string `json:"last_name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`

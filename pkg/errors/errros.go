@@ -9,6 +9,7 @@ var (
 	ErrPhoneInvalid     = StringError{Msg: "phone is invalid"}
 	ErrFirstNameInvalid = StringError{Msg: "first_name is invalid"}
 	ErrLastNameInvalid  = StringError{Msg: "last_name is invalid"}
+	ErrPasswordIncorrect = StringError{Msg: "password is incorrect"}
 )
 
 type StringError struct {
