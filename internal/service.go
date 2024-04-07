@@ -7,33 +7,30 @@ import (
 	"barista/pkg/models"
 	"barista/pkg/repo"
 	"barista/pkg/utils"
-	"github.com/fergusstrange/embedded-postgres"
 	"github.com/spf13/cast"
 	"os"
 )
 
-func IsTest() bool {
-	test, ok := os.LookupEnv("TEST")
+func getPostgres() (string, int) {
+	address, ok := os.LookupEnv("postgres_address")
 	if !ok {
-		return false
+		return "localhost", 5432
 	}
 
-	return cast.ToBool(test)
+	port, ok := os.LookupEnv("postgres_port")
+	if !ok {
+		return "localhost", 5432
+	}
+
+	return address, cast.ToInt(port)
 }
 
 func Run() {
-	if IsTest() {
-		postgres := embeddedpostgres.NewDatabase()
-		err := postgres.Start()
-		if err != nil {
-			panic(err)
-		}
-	}
-
+	address, port := getPostgres()
 	postgres := utils.NewPostgres(
 		models.Postgres{
-			Host:     "localhost",
-			Port:     5432,
+			Host:     address,
+			Port:     port,
 			UserName: "postgres",
 			Password: "postgres",
 			DbName:   "postgres",
