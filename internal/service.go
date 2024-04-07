@@ -7,9 +7,28 @@ import (
 	"barista/pkg/models"
 	"barista/pkg/repo"
 	"barista/pkg/utils"
+	"github.com/fergusstrange/embedded-postgres"
+	"github.com/spf13/cast"
+	"os"
 )
 
+func IsTest() bool {
+	test, ok := os.LookupEnv("TEST")
+	if !ok {
+		return false
+	}
+
+	return cast.ToBool(test)
+}
+
 func Run() {
+	if IsTest() {
+		postgres := embeddedpostgres.NewDatabase()
+		err := postgres.Start()
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	postgres := utils.NewPostgres(
 		models.Postgres{
