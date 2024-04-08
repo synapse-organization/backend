@@ -8,10 +8,13 @@ import (
 	"barista/pkg/utils"
 	"context"
 	"math/rand"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type UserHandler struct {
 	UserRepo repo.UsersRepo
+	Postgres *pgx.Conn
 }
 
 func (u UserHandler) Login(ctx context.Context, user *models.User) error {
@@ -26,7 +29,14 @@ func (u UserHandler) Login(ctx context.Context, user *models.User) error {
 	}
 
 	token, refreshToken, err := utils.TokenGenerator(foundUser.Email, foundUser.FirstName, foundUser.LastName, string(foundUser.ID))
-	utils.UpdateAllTokens(token, refreshToken, string(foundUser.ID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to generate tokens. error: %v", err)
+	}
+
+	utils.UpdateAllTokens(u.Postgres, token, refreshToken, string(foundUser.ID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to update tokens. error: %v", err)
+	}
 
 	return nil
 }
