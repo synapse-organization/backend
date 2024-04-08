@@ -19,7 +19,7 @@ type Auth struct {
 	Handler *modules.UserHandler
 }
 
-func (u Auth) PostLogin(c *gin.Context) {
+func (u Auth) PostLogin(c *gin.Context) (string, string, error) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
@@ -28,10 +28,10 @@ func (u Auth) PostLogin(c *gin.Context) {
 	if err != nil {
 		log.GetLog().Errorf("Unable to bind json. error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
-		return
+		return "", "", err
 	}
 
-	err = u.Handler.Login(ctx, &user)
+	token, refreshToken, err := u.Handler.Login(ctx, &user)
 	if err != nil {
 		errValue := err.Error()
 		if !utils.IsCommonError(err) {
@@ -40,12 +40,12 @@ func (u Auth) PostLogin(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusInternalServerError, gin.H{"error": errValue})
-		return
+		return "", "", err
 	}
 
 	// TODO: return jwt token
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	return
+	return token, refreshToken, nil
 }
 
 func (u Auth) PostSignUp(c *gin.Context) {
