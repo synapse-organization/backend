@@ -1,11 +1,14 @@
 package utils
 
 import (
+	"context"
 	"errors"
-	jwt "github.com/golang-jwt/jwt"
-	"log"
+	"fmt"
 	"os"
 	"time"
+
+	jwt "github.com/golang-jwt/jwt"
+	"github.com/jackc/pgx/v5"
 )
 
 type SignedDetails struct {
@@ -42,8 +45,7 @@ func TokenGenerator(email, firstname, lastname, uid string) (signedToken string,
 
 	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString([]byte(SECRET_KEY))
 	if err != nil {
-		log.Panic(err)
-		return
+		return "", "", err
 	}
 
 	return token, refreshToken, err
@@ -73,11 +75,14 @@ func ValidateToken(signedToken string) (claims *SignedDetails, msg string) {
 	return claims, msg
 }
 
-func UpdateAllTokens(signedToken, refreshToken, userID string) (newSignedToken, newSignedRefreshToken string, err error) {
+func UpdateAllTokens(postgres *pgx.Conn, signedToken, refreshToken, userID string) (newSignedToken, newSignedRefreshToken string, err error) {
+	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	// Validate the refresh token
-	refreshClaims, err := ValidateRefreshToken(refreshToken)
-	if err != nil {
-		return "", "", err
+	refreshClaims, msg := ValidateToken(refreshToken)
+	if msg != "" {
+		return "", "", errors.New(msg)
 	}
 
 	// Check if the user ID in the refresh token matches the provided user ID
@@ -91,21 +96,14 @@ func UpdateAllTokens(signedToken, refreshToken, userID string) (newSignedToken, 
 		return "", "", err
 	}
 
-	return newSignedToken, newSignedRefreshToken, nil
-}
-
-func ValidateRefreshToken(signedRefreshToken string) (*SignedDetails, error) {
-	token, err := jwt.ParseWithClaims(signedRefreshToken, &SignedDetails{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(SECRET_KEY), nil
-	})
+	_, err = postgres.Exec(ctx,
+		`UPDATE users
+        SET token = $1, refresh_token = $2, updated_at = $3
+        WHERE user_id = $4`,
+		newSignedToken, newSignedRefreshToken, time.Now(), userID)
 	if err != nil {
-		return nil, err
+		panic(fmt.Sprintf("Unable to update tokens. error: %v", err))
 	}
 
-	claims, ok := token.Claims.(*SignedDetails)
-	if !ok || !token.Valid {
-		return nil, errors.New("invalid refresh token")
-	}
-
-	return claims, nil
+	return newSignedToken, newSignedRefreshToken, nil
 }
