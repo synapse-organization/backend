@@ -7,3 +7,10 @@ type Route struct {
 	Path     string
 	Function gin.HandlerFunc
 }
+
+type RequestMethod string
+
+const (
+	POST RequestMethod = "POST"
+	GET  RequestMethod = "GET"
+)
