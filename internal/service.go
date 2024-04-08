@@ -38,17 +38,18 @@ func Run() {
 	)
 
 	authMiddleware := middlewares.AuthMiddleware{}
+
 	service := StartService()
-	apiV1 := service.AddGroup("/api/v1/")
+	apiV1 := service.engine.Group("/api")
 
 	UserRepo := repo.NewUserRepoImp(postgres)
-	UserHandler := modules.UserHandler{UserRepo: UserRepo}
+	UserHandler := modules.UserHandler{UserRepo: UserRepo, Postgres: postgres}
+	userHttpHandler := http.Auth{Handler: &UserHandler}
 
-	service.AddStructRoutes(apiV1, http.Auth{
-		Handler: &UserHandler,
-	})
-
-	service.AddStructRoutes(apiV1, http.User{}, authMiddleware.IsAuthorized())
+	user := apiV1.Group("/user")
+	user.Handle(string(models.POST), "signup", userHttpHandler.SignUp)
+	user.Handle(string(models.POST), "login", userHttpHandler.Login)
+	user.Handle(string(models.GET), "get_user", authMiddleware.IsAuthorized, userHttpHandler.GetUser)
 
 	service.Run(":8080")
 }
