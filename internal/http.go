@@ -16,10 +16,12 @@ type Service struct {
 }
 
 func StartService() *Service {
+	service := Service{}
 	gin.SetMode(gin.ReleaseMode)
-	return &Service{
-		engine: gin.Default(),
-	}
+	engine := gin.Default()
+	engine.Use(service.CorMiddleware())
+	service.engine = engine
+	return &service
 }
 func (s *Service) AddGroup(path string) *gin.RouterGroup {
 	return s.engine.Group(path)
@@ -65,6 +67,23 @@ func (s *Service) AddStructRoutes(group *gin.RouterGroup, route interface{}, mid
 		return
 	} else {
 		log.GetLog().Error("Route is not a struct")
+	}
+}
+
+func (s *Service) CorMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Header("Access-Control-Allow-Methods", "POST,HEAD,PATCH, OPTIONS, GET, PUT")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
 	}
 }
 
