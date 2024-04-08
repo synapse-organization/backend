@@ -17,15 +17,15 @@ type UserHandler struct {
 	Postgres *pgx.Conn
 }
 
-func (u UserHandler) Login(ctx context.Context, user *models.User) error {
+func (u UserHandler) Login(ctx context.Context, user *models.User) (string, string, error) {
 	foundUser, err := u.UserRepo.GetByEmail(ctx, user.Email)
 	if err != nil {
 		log.GetLog().Errorf("Incorrect name or password. error: %v", err)
-		return err
+		return "", "", err
 	}
 
 	if !utils.CheckPasswordHash(user.Password, foundUser.Password) {
-		return errors.ErrPasswordIncorrect.Error()
+		return "", "", errors.ErrPasswordIncorrect.Error()
 	}
 
 	token, refreshToken, err := utils.TokenGenerator(foundUser.Email, foundUser.FirstName, foundUser.LastName, string(foundUser.ID))
@@ -38,7 +38,7 @@ func (u UserHandler) Login(ctx context.Context, user *models.User) error {
 		log.GetLog().Errorf("Unable to update tokens. error: %v", err)
 	}
 
-	return nil
+	return token, refreshToken, nil
 }
 
 func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
