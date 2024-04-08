@@ -16,10 +16,12 @@ type Service struct {
 }
 
 func StartService() *Service {
+	service := Service{}
 	gin.SetMode(gin.ReleaseMode)
-	return &Service{
-		engine: gin.New(),
-	}
+	engine := gin.Default()
+	engine.Use(service.CorMiddleware())
+	service.engine = engine
+	return &service
 }
 func (s *Service) AddGroup(path string) *gin.RouterGroup {
 	return s.engine.Group(path)
@@ -68,7 +70,7 @@ func (s *Service) AddStructRoutes(group *gin.RouterGroup, route interface{}, mid
 	}
 }
 
-func CORSMiddleware() gin.HandlerFunc {
+func (s *Service) CorMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		c.Header("Access-Control-Allow-Origin", "*")
@@ -90,7 +92,6 @@ func (s *Service) AddMiddleware(middleware ...gin.HandlerFunc) {
 }
 
 func (s *Service) Run(address string) {
-	s.engine.Use(CORSMiddleware())
 	start := s.engine.Group("/")
 	s.AddRoutes(start, models.Route{
 		Method: "GET",
