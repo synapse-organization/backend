@@ -8,7 +8,7 @@ volumes:
 
 services:
   backend_app:
-    image: backend:latest
+    image: irania9o/synapse_backend:latest
     container_name: 'backend_app'
     restart: always
     ports:
