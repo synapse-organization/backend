@@ -11,7 +11,6 @@ func SendEmail(to, subject, body string) error {
 
 	d := gomail.NewDialer("smtp.gmail.com", 587, "synapseteam.proj@gmail.com", "xoscrmcssxbfmgqe")
 
-	// Send the email to Bob, Cora and Dan.
 	if err := d.DialAndSend(m); err != nil {
 		return err
 	}
