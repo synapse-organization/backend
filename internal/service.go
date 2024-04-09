@@ -50,6 +50,7 @@ func Run() {
 	user.Handle(string(models.POST), "signup", userHttpHandler.SignUp)
 	user.Handle(string(models.POST), "login", userHttpHandler.Login)
 	user.Handle(string(models.GET), "get_user", authMiddleware.IsAuthorized, userHttpHandler.GetUser)
+	user.Handle(string(models.POST), "forgetpassword", userHttpHandler.ForgetPassword)
 
-	service.Run(":8080")
+	service.Run(":8081")
 }
