@@ -7,6 +7,7 @@ import (
 	"barista/pkg/repo"
 	"barista/pkg/utils"
 	"context"
+	"fmt"
 	"math/rand"
 
 	"github.com/jackc/pgx/v5"
@@ -15,6 +16,56 @@ import (
 type UserHandler struct {
 	UserRepo repo.UsersRepo
 	Postgres *pgx.Conn
+}
+
+const (
+    passwordLength = 8
+)
+
+func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) error {
+	// Find the user based on email
+	foundUser, err := u.UserRepo.GetByEmail(ctx, user.Email)
+	if err != nil {
+		log.GetLog().Errorf("Email does not exist. error: %v", err)
+		return err
+	}
+
+	// Generate a random password
+    newPassword := utils.GenerateRandomPassword(passwordLength)
+
+    // Update user's password with the new random password
+    hashedPassword, err := utils.HashPassword(newPassword)
+    if err != nil {
+        log.GetLog().Errorf("Unable to hash password. error: %v", err)
+        return err
+    }
+    foundUser.Password = hashedPassword
+
+    // Save the updated password to the database
+    if err := u.UserRepo.UpdatePassword(ctx, foundUser.ID, foundUser.Password); err != nil {
+        log.GetLog().Errorf("Unable to update user's password. error: %v", err)
+        return err
+    }
+
+	// Send email with the new password to the user
+	emailBody := fmt.Sprintf(`Hello %s,<br><br>
+	A new password has been requested for your Barista account associated with %s.<br><br>
+
+	Here is your new password: <strong>%s</strong><br><br>
+
+	You can use your random generated password to login to your account.<br><br>
+
+	After logging in your account, you can reset your password in your profile section.<br><br>
+
+	Yours,<br>
+	The Synapse team`, foundUser.FirstName, foundUser.Email, newPassword)
+	err = utils.SendEmail(foundUser.Email, "Barista account recovery", emailBody)
+	if err != nil {
+		log.GetLog().Errorf("Unable to send email. error: %v", err)
+        return err
+	}
+
+	return nil
 }
 
 func (u UserHandler) Login(ctx context.Context, user *models.User) (string, string, error) {

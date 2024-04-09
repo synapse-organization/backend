@@ -21,8 +21,8 @@ type Auth struct {
 }
 
 func (u Auth) ForgetPassword(c *gin.Context) {
-	// ctx, cancel := context.WithTimeout(c, TimeOut)
-	// defer cancel()
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
 
 	var user models.User
 	err := c.ShouldBindJSON(&user)
@@ -32,11 +32,11 @@ func (u Auth) ForgetPassword(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(user.Email)
-	err = utils.SendEmail(user.Email, "Barista account recovery", "سلام یک درخواست ")
+	err = u.Handler.ForgetPassword(ctx, &user)
 	if err != nil {
-		log.GetLog().Errorf("Unable to send forgetpassword email. error: %v", err)
+		log.GetLog().Errorf("Unable to process forgetpassword. error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
