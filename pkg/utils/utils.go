@@ -9,7 +9,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"net/mail"
 	"strings"
+	"math/rand"
+	"time"
 )
+
+
+func GenerateRandomPassword(length int) (string) {
+	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    random := rand.New(rand.NewSource(time.Now().UnixNano()))
+    password := make([]byte, length)
+    for i := range password {
+        password[i] = charset[random.Intn(len(charset))]
+    }
+    return string(password)
+}
 
 func SplitMethodPrefix(methodName string) (string, string) {
 	for i, char := range methodName {

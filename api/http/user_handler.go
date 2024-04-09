@@ -20,6 +20,29 @@ type Auth struct {
 	Handler *modules.UserHandler
 }
 
+func (u Auth) ForgetPassword(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var user models.User
+	err := c.ShouldBindJSON(&user)
+	if err != nil {
+		log.GetLog().Errorf("Unable to bind json. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
+	}
+
+	err = u.Handler.ForgetPassword(ctx, &user)
+	if err != nil {
+		log.GetLog().Errorf("Unable to process forgetpassword. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
+
 func (u Auth) Login(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()

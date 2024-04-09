@@ -17,6 +17,7 @@ type UsersRepo interface {
 	GetByID(ctx context.Context, id int32) (*models.User, error)
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	DeleteByID(ctx context.Context, id int32) error
+	UpdatePassword(ctx context.Context, id int32, newPassword string) error
 }
 
 type UserRepoImp struct {
@@ -71,4 +72,12 @@ func (u *UserRepoImp) DeleteByID(ctx context.Context, id int32) error {
 		log.GetLog().Errorf("Unable to delete user by id. error: %v", err)
 	}
 	return err
+}
+
+func (u *UserRepoImp) UpdatePassword(ctx context.Context, id int32, newPassword string) error {
+    _, err := u.postgres.Exec(ctx, "UPDATE users SET password = $1 WHERE id = $2", newPassword, id)
+    if err != nil {
+        log.GetLog().Errorf("Unable to update user's password. error: %v", err)
+    }
+    return nil
 }
