@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"barista/pkg/repo"
 	"context"
 	"errors"
 	"fmt"
@@ -51,7 +52,16 @@ func TokenGenerator(email, firstname, lastname, uid string) (signedToken string,
 	return token, refreshToken, err
 }
 
-func ValidateToken(signedToken string) (claims *SignedDetails, msg string) {
+func ValidateToken(postgres *pgx.Conn, signedToken string) (claims *SignedDetails, msg string) {
+	exists, err := repo.CheckTokenExistence(postgres, signedToken)
+	if err != nil {
+		return nil, err.Error()
+	}
+
+	if !exists {
+		return nil, "Token doesn't exist"
+	}
+
 	token, err := jwt.ParseWithClaims(signedToken, &SignedDetails{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(SECRET_KEY), nil
 	})
@@ -63,12 +73,12 @@ func ValidateToken(signedToken string) (claims *SignedDetails, msg string) {
 
 	claims, ok := token.Claims.(*SignedDetails)
 	if !ok {
-		msg = "the token is invalid"
+		msg = "The token is invalid"
 		return
 	}
 
 	if claims.ExpiresAt < time.Now().Local().Unix() {
-		msg = "token is already expired"
+		msg = "Token is already expired"
 		return
 	}
 
@@ -80,7 +90,7 @@ func UpdateAllTokens(postgres *pgx.Conn, signedToken, refreshToken, userID strin
 	defer cancel()
 
 	// Validate the refresh token
-	refreshClaims, msg := ValidateToken(refreshToken)
+	refreshClaims, msg := ValidateToken(postgres, refreshToken)
 	if msg != "" {
 		return "", "", errors.New(msg)
 	}
