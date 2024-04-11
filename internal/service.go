@@ -43,6 +43,7 @@ func Run() {
 	apiV1 := service.engine.Group("/api")
 
 	UserRepo := repo.NewUserRepoImp(postgres)
+	_ = repo.NewTokenRepoImp(postgres)
 	UserHandler := modules.UserHandler{UserRepo: UserRepo, Postgres: postgres}
 	userHttpHandler := http.Auth{Handler: &UserHandler}
 
