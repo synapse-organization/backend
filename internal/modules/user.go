@@ -9,12 +9,14 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
 
 type UserHandler struct {
 	UserRepo repo.UsersRepo
+	TokenRepo repo.TokensRepo
 	Postgres *pgx.Conn
 }
 
@@ -87,6 +89,12 @@ func (u UserHandler) Login(ctx context.Context, user *models.User) (string, stri
 	utils.UpdateAllTokens(u.Postgres, token, refreshToken, string(foundUser.ID))
 	if err != nil {
 		log.GetLog().Errorf("Unable to update tokens. error: %v", err)
+	}
+
+	err = u.TokenRepo.Create(ctx, token, refreshToken, user.ID, time.Now())
+	if err != nil {
+		log.GetLog().Errorf("Unable to create token. error: %v", err)
+		return "", "", err
 	}
 
 	return token, refreshToken, nil
