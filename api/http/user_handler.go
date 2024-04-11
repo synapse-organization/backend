@@ -6,7 +6,6 @@ import (
 	"barista/pkg/models"
 	"barista/pkg/utils"
 	"context"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
@@ -56,7 +55,6 @@ func (u Auth) Login(c *gin.Context) {
 	}
 
 	token, refreshToken, err := u.Handler.Login(ctx, &user)
-	fmt.Println(token, refreshToken)
 	if err != nil {
 		errValue := err.Error()
 		if !utils.IsCommonError(err) {
@@ -68,8 +66,11 @@ func (u Auth) Login(c *gin.Context) {
 		return
 	}
 
-	// TODO: return jwt token
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	c.JSON(http.StatusOK, gin.H{
+		"status":       "ok",
+		"token":        token,
+		"refreshToken": refreshToken,
+	})
 	return
 }
 
