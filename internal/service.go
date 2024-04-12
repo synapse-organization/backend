@@ -7,8 +7,9 @@ import (
 	"barista/pkg/models"
 	"barista/pkg/repo"
 	"barista/pkg/utils"
-	"github.com/spf13/cast"
 	"os"
+
+	"github.com/spf13/cast"
 )
 
 func getPostgres() (string, int) {
@@ -43,8 +44,8 @@ func Run() {
 	apiV1 := service.engine.Group("/api")
 
 	UserRepo := repo.NewUserRepoImp(postgres)
-	_ = repo.NewTokenRepoImp(postgres)
-	UserHandler := modules.UserHandler{UserRepo: UserRepo, Postgres: postgres}
+	TokenRepo := repo.NewTokenRepoImp(postgres)
+	UserHandler := modules.UserHandler{UserRepo: UserRepo, TokenRepo: TokenRepo, Postgres: postgres}
 	userHttpHandler := http.User{Handler: &UserHandler}
 
 	user := apiV1.Group("/user")
@@ -52,7 +53,8 @@ func Run() {
 	user.Handle(string(models.POST), "login", userHttpHandler.Login)
 	user.Handle(string(models.GET), "get-user", authMiddleware.IsAuthorized, userHttpHandler.GetUser)
 	user.Handle(string(models.GET), "verify-email", userHttpHandler.VerifyEmail)
-	user.Handle(string(models.POST), "forgetpassword", userHttpHandler.ForgetPassword)
+	user.Handle(string(models.POST), "forget-password", userHttpHandler.ForgetPassword)
+	user.Handle(string(models.GET), "user-profile", userHttpHandler.UserProfile)
 
 	cafeRepo := repo.NewCafeRepoImp(postgres)
 	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo}
