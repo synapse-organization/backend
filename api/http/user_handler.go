@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/cast"
 	"net/http"
 	"time"
 )
@@ -99,6 +100,24 @@ func (u Auth) SignUp(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{"status": "ok"})
+	return
+}
+
+func (u Auth) VerifyEmail(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	email := c.Query("c")
+	callback := c.Query("callback")
+
+	err := u.Handler.VerifyEmail(ctx, cast.ToString(email))
+	if err != nil {
+		log.GetLog().Errorf("Unable to verify email. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
+	}
+
+	c.Redirect(http.StatusFound, callback)
 	return
 }
 
