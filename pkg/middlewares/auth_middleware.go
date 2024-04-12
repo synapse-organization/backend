@@ -2,12 +2,15 @@ package middlewares
 
 import (
 	"barista/pkg/utils"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 )
 
 type AuthMiddleware struct {
 	IgnorePaths []string
+	Postgres *pgx.Conn
 }
 
 func (a AuthMiddleware) IsAuthorized(c *gin.Context) {
@@ -19,7 +22,7 @@ func (a AuthMiddleware) IsAuthorized(c *gin.Context) {
 		return
 	}
 
-	claims, err := utils.ValidateToken(token[0])
+	claims, err := utils.ValidateToken(a.Postgres, token[0])
 	if err != "" {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		c.Abort()
