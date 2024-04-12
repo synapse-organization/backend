@@ -4,7 +4,6 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
-	"fmt"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -33,9 +32,12 @@ func NewUserRepoImp(postgres *pgx.Conn) *UserRepoImp {
     			email TEXT, 
     			password TEXT, 
     			phone BIGINT, 
-    			sex INT)`)
+    			sex INT,
+    			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    			UNIQUE(email),
+    			UNIQUE(phone))`)
 	if err != nil {
-		panic(fmt.Sprintf("Unable to create table users. error: %v", err))
+		log.GetLog().WithError(err).WithField("table", "users").Fatal("Unable to create table")
 	}
 	return &UserRepoImp{postgres: postgres}
 }
@@ -75,9 +77,9 @@ func (u *UserRepoImp) DeleteByID(ctx context.Context, id int32) error {
 }
 
 func (u *UserRepoImp) UpdatePassword(ctx context.Context, id int32, newPassword string) error {
-    _, err := u.postgres.Exec(ctx, "UPDATE users SET password = $1 WHERE id = $2", newPassword, id)
-    if err != nil {
-        log.GetLog().Errorf("Unable to update user's password. error: %v", err)
-    }
-    return nil
+	_, err := u.postgres.Exec(ctx, "UPDATE users SET password = $1 WHERE id = $2", newPassword, id)
+	if err != nil {
+		log.GetLog().Errorf("Unable to update user's password. error: %v", err)
+	}
+	return nil
 }
