@@ -4,7 +4,6 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
-	"fmt"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -14,6 +13,7 @@ func init() {
 
 type UsersRepo interface {
 	Create(ctx context.Context, user *models.User) error
+	Verify(ctx context.Context, email string) error
 	GetByID(ctx context.Context, id int32) (*models.User, error)
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	DeleteByID(ctx context.Context, id int32) error
@@ -33,9 +33,12 @@ func NewUserRepoImp(postgres *pgx.Conn) *UserRepoImp {
     			email TEXT, 
     			password TEXT, 
     			phone BIGINT, 
-    			sex INT)`)
+    			sex INT,
+    			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    			is_verified BOOLEAN DEFAULT FALSE,
+    			UNIQUE(email))`)
 	if err != nil {
-		panic(fmt.Sprintf("Unable to create table users. error: %v", err))
+		log.GetLog().WithError(err).WithField("table", "users").Fatal("Unable to create table")
 	}
 	return &UserRepoImp{postgres: postgres}
 }
@@ -44,6 +47,14 @@ func (u *UserRepoImp) Create(ctx context.Context, user *models.User) error {
 	_, err := u.postgres.Exec(ctx, "INSERT INTO users (id, first_name, last_name, email, password, phone, sex) VALUES ($1, $2, $3, $4, $5, $6, $7)", user.ID, user.FirstName, user.LastName, user.Email, user.Password, user.Phone, user.Sex)
 	if err != nil {
 		log.GetLog().Errorf("Unable to intser user. error: %v", err)
+	}
+	return err
+}
+
+func (u *UserRepoImp) Verify(ctx context.Context, email string) error {
+	_, err := u.postgres.Exec(ctx, "UPDATE users SET is_verified = TRUE WHERE email = $1", email)
+	if err != nil {
+		log.GetLog().Errorf("Unable to verify user. error: %v", err)
 	}
 	return err
 }
@@ -75,9 +86,9 @@ func (u *UserRepoImp) DeleteByID(ctx context.Context, id int32) error {
 }
 
 func (u *UserRepoImp) UpdatePassword(ctx context.Context, id int32, newPassword string) error {
-    _, err := u.postgres.Exec(ctx, "UPDATE users SET password = $1 WHERE id = $2", newPassword, id)
-    if err != nil {
-        log.GetLog().Errorf("Unable to update user's password. error: %v", err)
-    }
-    return nil
+	_, err := u.postgres.Exec(ctx, "UPDATE users SET password = $1 WHERE id = $2", newPassword, id)
+	if err != nil {
+		log.GetLog().Errorf("Unable to update user's password. error: %v", err)
+	}
+	return nil
 }

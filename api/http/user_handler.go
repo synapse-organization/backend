@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/cast"
 	"net/http"
 	"time"
 )
@@ -16,11 +17,11 @@ var (
 	TimeOut = 5 * time.Second
 )
 
-type Auth struct {
+type User struct {
 	Handler *modules.UserHandler
 }
 
-func (u Auth) ForgetPassword(c *gin.Context) {
+func (u User) ForgetPassword(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
@@ -43,7 +44,7 @@ func (u Auth) ForgetPassword(c *gin.Context) {
 	return
 }
 
-func (u Auth) Login(c *gin.Context) {
+func (u User) Login(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
@@ -73,7 +74,7 @@ func (u Auth) Login(c *gin.Context) {
 	return
 }
 
-func (u Auth) SignUp(c *gin.Context) {
+func (u User) SignUp(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
@@ -102,6 +103,24 @@ func (u Auth) SignUp(c *gin.Context) {
 	return
 }
 
-func (u Auth) GetUser(c *gin.Context) {
+func (u User) VerifyEmail(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	email := c.Query("c")
+	callback := c.Query("callback")
+
+	err := u.Handler.VerifyEmail(ctx, cast.ToString(email))
+	if err != nil {
+		log.GetLog().Errorf("Unable to verify email. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
+	}
+
+	c.Redirect(http.StatusFound, callback)
+	return
+}
+
+func (u User) GetUser(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "ok"})
 }

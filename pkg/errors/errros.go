@@ -3,13 +3,14 @@ package errors
 import "errors"
 
 var (
-	ErrPasswordInvalid  = StringError{Msg: "password is invalid"}
-	ErrorUserNotFound   = StringError{Msg: "user not found"}
-	ErrEmailInvalid     = StringError{Msg: "email is invalid"}
-	ErrPhoneInvalid     = StringError{Msg: "phone is invalid"}
-	ErrFirstNameInvalid = StringError{Msg: "first_name is invalid"}
-	ErrLastNameInvalid  = StringError{Msg: "last_name is invalid"}
+	ErrPasswordInvalid   = StringError{Msg: "password is invalid"}
+	ErrorUserNotFound    = StringError{Msg: "user not found"}
+	ErrEmailInvalid      = StringError{Msg: "email is invalid"}
+	ErrPhoneInvalid      = StringError{Msg: "phone is invalid"}
+	ErrFirstNameInvalid  = StringError{Msg: "first_name is invalid"}
+	ErrLastNameInvalid   = StringError{Msg: "last_name is invalid"}
 	ErrPasswordIncorrect = StringError{Msg: "password is incorrect"}
+	ErrEmailExists       = StringError{Msg: "email already exists"}
 )
 
 type StringError struct {

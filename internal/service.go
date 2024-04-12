@@ -44,13 +44,23 @@ func Run() {
 
 	UserRepo := repo.NewUserRepoImp(postgres)
 	UserHandler := modules.UserHandler{UserRepo: UserRepo, Postgres: postgres}
-	userHttpHandler := http.Auth{Handler: &UserHandler}
+	userHttpHandler := http.User{Handler: &UserHandler}
 
 	user := apiV1.Group("/user")
 	user.Handle(string(models.POST), "signup", userHttpHandler.SignUp)
 	user.Handle(string(models.POST), "login", userHttpHandler.Login)
-	user.Handle(string(models.GET), "get_user", authMiddleware.IsAuthorized, userHttpHandler.GetUser)
+	user.Handle(string(models.GET), "get-user", authMiddleware.IsAuthorized, userHttpHandler.GetUser)
+	user.Handle(string(models.GET), "verify-email", userHttpHandler.VerifyEmail)
 	user.Handle(string(models.POST), "forgetpassword", userHttpHandler.ForgetPassword)
+
+	cafeRepo := repo.NewCafeRepoImp(postgres)
+	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo}
+	cafeHttpHandler := http.Cafe{Handler: &cafeHandler}
+
+	cafe := apiV1.Group("/cafe")
+	cafe.Handle(string(models.POST), "create", cafeHttpHandler.Create)
+	cafe.Handle(string(models.GET), "get-cafe", cafeHttpHandler.GetCafe)
+	cafe.Handle(string(models.GET), "search-cafe", cafeHttpHandler.SearchCafe)
 
 	service.Run(":8080")
 }

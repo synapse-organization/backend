@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -19,7 +20,7 @@ type UserHandler struct {
 }
 
 const (
-    passwordLength = 8
+	passwordLength = 8
 )
 
 func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) error {
@@ -31,21 +32,21 @@ func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) erro
 	}
 
 	// Generate a random password
-    newPassword := utils.GenerateRandomPassword(passwordLength)
+	newPassword := utils.GenerateRandomPassword(passwordLength)
 
-    // Update user's password with the new random password
-    hashedPassword, err := utils.HashPassword(newPassword)
-    if err != nil {
-        log.GetLog().Errorf("Unable to hash password. error: %v", err)
-        return err
-    }
-    foundUser.Password = hashedPassword
+	// Update user's password with the new random password
+	hashedPassword, err := utils.HashPassword(newPassword)
+	if err != nil {
+		log.GetLog().Errorf("Unable to hash password. error: %v", err)
+		return err
+	}
+	foundUser.Password = hashedPassword
 
-    // Save the updated password to the database
-    if err := u.UserRepo.UpdatePassword(ctx, foundUser.ID, foundUser.Password); err != nil {
-        log.GetLog().Errorf("Unable to update user's password. error: %v", err)
-        return err
-    }
+	// Save the updated password to the database
+	if err := u.UserRepo.UpdatePassword(ctx, foundUser.ID, foundUser.Password); err != nil {
+		log.GetLog().Errorf("Unable to update user's password. error: %v", err)
+		return err
+	}
 
 	// Send email with the new password to the user
 	emailBody := fmt.Sprintf(`Hello %s,<br><br>
@@ -62,7 +63,7 @@ func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) erro
 	err = utils.SendEmail(foundUser.Email, "Barista account recovery", emailBody)
 	if err != nil {
 		log.GetLog().Errorf("Unable to send email. error: %v", err)
-        return err
+		return err
 	}
 
 	return nil
@@ -123,8 +124,45 @@ func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
 	user.Password = hashedPassword
 
 	err = u.UserRepo.Create(ctx, user)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
 		log.GetLog().Errorf("Unable to create user. error: %v", err)
+		return err
+	}
+	if err != nil && strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+		return errors.ErrEmailExists.Error()
+	}
+
+	encryptedEmail, err := utils.Encrypt(user.Email)
+	if err == nil {
+		log.GetLog().Errorf("Unable to encrypt email. error: %v", err)
+
+		emailBody := fmt.Sprintf(`Hello %s,<br><br>
+	To verify your email address, please click the link below:<br><br>
+	
+	<a href="http://localhost:8080/api/user/verify-email?c=%s&callback=http://localhost:5173">Verify Email</a><br><br>
+
+	Yours,<br>
+	The Synapse team`, user.FirstName, encryptedEmail)
+
+		err = utils.SendEmail(user.Email, "Barista account verification", emailBody)
+		if err != nil {
+			log.GetLog().Errorf("Unable to send email. error: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func (u UserHandler) VerifyEmail(ctx context.Context, email string) error {
+	decryptedEmail, err := utils.Decrypt(email)
+	if err != nil {
+		log.GetLog().Errorf("Unable to decrypt email. error: %v", err)
+		return err
+	}
+
+	err = u.UserRepo.Verify(ctx, decryptedEmail)
+	if err != nil {
+		log.GetLog().Errorf("Unable to verify user. error: %v", err)
 		return err
 	}
 
