@@ -17,11 +17,11 @@ var (
 	TimeOut = 5 * time.Second
 )
 
-type Auth struct {
+type User struct {
 	Handler *modules.UserHandler
 }
 
-func (u Auth) ForgetPassword(c *gin.Context) {
+func (u User) ForgetPassword(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
@@ -44,7 +44,7 @@ func (u Auth) ForgetPassword(c *gin.Context) {
 	return
 }
 
-func (u Auth) Login(c *gin.Context) {
+func (u User) Login(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
@@ -74,7 +74,7 @@ func (u Auth) Login(c *gin.Context) {
 	return
 }
 
-func (u Auth) SignUp(c *gin.Context) {
+func (u User) SignUp(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
@@ -103,7 +103,7 @@ func (u Auth) SignUp(c *gin.Context) {
 	return
 }
 
-func (u Auth) VerifyEmail(c *gin.Context) {
+func (u User) VerifyEmail(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
@@ -121,6 +121,6 @@ func (u Auth) VerifyEmail(c *gin.Context) {
 	return
 }
 
-func (u Auth) GetUser(c *gin.Context) {
+func (u User) GetUser(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "ok"})
 }
