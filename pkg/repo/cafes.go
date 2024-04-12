@@ -36,7 +36,6 @@ func NewCafeRepoImp(postgres *pgx.Conn) *CafesRepoImp {
 				address TEXT,
 				location TEXT,
 				catagoires TEXT[],
-				FULLTEXT (name, description, address),
 				FOREIGN KEY (owner_id) REFERENCES users(id)
 			);`)
 	if err != nil {
