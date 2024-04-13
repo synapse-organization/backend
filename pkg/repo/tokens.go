@@ -64,7 +64,7 @@ func (t *TokenRepoImp) Create(ctx context.Context, token string, refreshToken st
 func (t *TokenRepoImp) GetIDByTokenString(ctx context.Context, token string) (int32, error) {
 	var userID int32
 	err := t.postgres.QueryRow(ctx,
-		`SELECT id
+		`SELECT user_id
 		FROM tokens
 		WHERE token = $1`, token).Scan(&userID)
 	if err != nil {

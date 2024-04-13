@@ -16,9 +16,9 @@ import (
 )
 
 type UserHandler struct {
-	UserRepo repo.UsersRepo
+	UserRepo  repo.UsersRepo
 	TokenRepo repo.TokensRepo
-	Postgres *pgx.Conn
+	Postgres  *pgx.Conn
 }
 
 const (
@@ -66,8 +66,6 @@ func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
 
 	encryptedEmail, err := utils.Encrypt(user.Email)
 	if err == nil {
-		log.GetLog().Errorf("Unable to encrypt email. error: %v", err)
-
 		emailBody := fmt.Sprintf(`Hello %s,<br><br>
 	To verify your email address, please click the link below:<br><br>
 	
@@ -106,7 +104,7 @@ func (u UserHandler) Login(ctx context.Context, user *models.User) (string, stri
 		log.GetLog().Errorf("Unable to update tokens. error: %v", err)
 	}
 
-	err = u.TokenRepo.Create(ctx, token, refreshToken, user.ID, time.Now())
+	err = u.TokenRepo.Create(ctx, token, refreshToken, foundUser.ID, time.Now())
 	if err != nil {
 		log.GetLog().Errorf("Unable to create token. error: %v", err)
 		return "", "", err
