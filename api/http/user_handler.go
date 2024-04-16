@@ -57,13 +57,11 @@ func (u User) Login(c *gin.Context) {
 
 	token, refreshToken, err := u.Handler.Login(ctx, &user)
 	if err != nil {
-		errValue := err.Error()
 		if !utils.IsCommonError(err) {
-			log.GetLog().Errorf("Unable to login. error: %v", err)
-			errValue = "Unable to login"
+			log.GetLog().Errorf("Unable to sign up. error: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to sign up"})
 		}
-
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errValue})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -84,23 +82,21 @@ func (u User) SignUp(c *gin.Context) {
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
 		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		c.JSON(400, gin.H{"error": "Unable to bind json"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to bind json"})
 		return
 	}
 
 	err = u.Handler.SignUp(ctx, &data)
 	if err != nil {
-		errValue := err.Error()
 		if !utils.IsCommonError(err) {
 			log.GetLog().Errorf("Unable to sign up. error: %v", err)
-			errValue = "Unable to sign up"
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to sign up"})
 		}
-
-		c.JSON(500, gin.H{"error": errValue})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(200, gin.H{"status": "ok"})
+	c.JSON(http.StatusCreated, gin.H{"status": "ok"})
 	return
 }
 
@@ -123,5 +119,5 @@ func (u User) VerifyEmail(c *gin.Context) {
 }
 
 func (u User) GetUser(c *gin.Context) {
-	c.JSON(200, gin.H{"status": "ok"})
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
