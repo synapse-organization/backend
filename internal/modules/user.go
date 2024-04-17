@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
@@ -83,34 +84,30 @@ func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
 	return nil
 }
 
-func (u UserHandler) Login(ctx context.Context, user *models.User) (string, string, error) {
+func (u UserHandler) Login(ctx context.Context, user *models.User) (string, error) {
 	foundUser, err := u.UserRepo.GetByEmail(ctx, user.Email)
 	if err != nil {
 		log.GetLog().Errorf("Incorrect name or password. error: %v", err)
-		return "", "", err
+		return "", err
 	}
 
 	if !utils.CheckPasswordHash(user.Password, foundUser.Password) {
-		return "", "", errors.ErrPasswordIncorrect.Error()
+		return "", errors.ErrPasswordIncorrect.Error()
 	}
 
-	token, refreshToken, err := utils.TokenGenerator(foundUser.Email, foundUser.FirstName, foundUser.LastName, string(foundUser.ID))
+	claims, token, err := utils.TokenGenerator(foundUser.Email, foundUser.FirstName, foundUser.LastName, strconv.Itoa(int(foundUser.ID)))
 	if err != nil {
 		log.GetLog().Errorf("Unable to generate tokens. error: %v", err)
 	}
 
-	utils.UpdateAllTokens(u.Postgres, token, refreshToken, string(foundUser.ID))
-	if err != nil {
-		log.GetLog().Errorf("Unable to update tokens. error: %v", err)
-	}
-
-	err = u.TokenRepo.Create(ctx, token, refreshToken, foundUser.ID, time.Now())
+	expiresAt := time.Unix(claims.ExpiresAt, 0)
+	err = u.TokenRepo.Create(ctx, claims.TokenID, token, foundUser.ID, expiresAt)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create token. error: %v", err)
-		return "", "", err
+		return "", err
 	}
 
-	return token, refreshToken, nil
+	return token, nil
 }
 
 func (u UserHandler) VerifyEmail(ctx context.Context, email string) error {
@@ -176,13 +173,18 @@ func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) erro
 }
 
 func (u UserHandler) UserProfile(ctx context.Context, incoming_token string) (*models.User, error) {
-	userID, err := u.TokenRepo.GetIDByTokenString(ctx, incoming_token)
+	claims, err := utils.GetClaims(incoming_token)
 	if err != nil {
-		log.GetLog().Errorf("Unable to retrieve user ID via token string")
+		log.GetLog().Errorf("Unable to get claims. error: %v", err)
 		return nil, err
 	}
 
-	user, err := u.UserRepo.GetByID(ctx, userID)
+	userID, err := strconv.Atoi(claims.Uid)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := u.UserRepo.GetByID(ctx, int32(userID))
 	if err != nil {
 		log.GetLog().Error(err)
 		return nil, err
