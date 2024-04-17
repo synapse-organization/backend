@@ -2,7 +2,6 @@ package repo
 
 import (
 	"barista/pkg/log"
-	"barista/pkg/models"
 	"context"
 	"fmt"
 	"time"
@@ -16,7 +15,8 @@ func init() {
 
 type TokensRepo interface {
 	Create(ctx context.Context, token string, refreshToken string, userID int32, updatedAt time.Time) error
-	GetByTokenString(ctx context.Context, token string)
+	GetIDByTokenString(ctx context.Context, token string) (int32, error)
+	// GetByTokenString(ctx context.Context, token string)
 }
 
 type TokenRepoImp struct {
@@ -44,10 +44,9 @@ func CheckTokenExistence(postgres *pgx.Conn, token string) (bool, error) {
 		token).Scan(&exists)
 	if err != nil {
 		log.GetLog().Errorf("Unable to check token existence. error: %v", err)
-		return false, err
 	}
 
-	return exists, nil
+	return exists, err
 }
 
 func (t *TokenRepoImp) Create(ctx context.Context, token string, refreshToken string, userID int32, updatedAt time.Time) error {
@@ -62,16 +61,29 @@ func (t *TokenRepoImp) Create(ctx context.Context, token string, refreshToken st
 	return nil
 }
 
-func (t *TokenRepoImp) GetByTokenString(ctx context.Context, token string) (*models.JWTToken, error) {
-	var JWTtoken models.JWTToken
+func (t *TokenRepoImp) GetIDByTokenString(ctx context.Context, token string) (int32, error) {
+	var userID int32
 	err := t.postgres.QueryRow(ctx,
-		`SELECT token, refresh_token, updated_at, user_id
+		`SELECT user_id
 		FROM tokens
-		WHERE token = $1`,
-		token).Scan(&JWTtoken.Token, &JWTtoken.RefreshToken, &JWTtoken.UpdatedAt, &JWTtoken.UserID)
+		WHERE token = $1`, token).Scan(&userID)
 	if err != nil {
-		log.GetLog().Errorf("Unable to get token by it's string. error: %v", err)
+		log.GetLog().Errorf("Unable to get user ID by tokens string. error: %v", err)
 	}
 
-	return &JWTtoken, err
+	return userID, err
 }
+
+// func (t *TokenRepoImp) GetByTokenString(ctx context.Context, token string) (*models.JWTToken, error) {
+// 	var JWTtoken models.JWTToken
+// 	err := t.postgres.QueryRow(ctx,
+// 		`SELECT token, refresh_token, updated_at, user_id
+// 		FROM tokens
+// 		WHERE token = $1`,
+// 		token).Scan(&JWTtoken.Token, &JWTtoken.RefreshToken, &JWTtoken.UpdatedAt, &JWTtoken.UserID)
+// 	if err != nil {
+// 		log.GetLog().Errorf("Unable to get token by it's string. error: %v", err)
+// 	}
+
+// 	return &JWTtoken, err
+// }

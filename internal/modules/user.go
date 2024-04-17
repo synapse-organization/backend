@@ -16,14 +16,118 @@ import (
 )
 
 type UserHandler struct {
-	UserRepo repo.UsersRepo
+	UserRepo  repo.UsersRepo
 	TokenRepo repo.TokensRepo
-	Postgres *pgx.Conn
+	Postgres  *pgx.Conn
 }
 
 const (
 	passwordLength = 8
 )
+
+func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
+	user.ID = rand.Int31()
+
+	if !utils.CheckEmailValidity(user.Email) {
+		return errors.ErrEmailInvalid.Error()
+	}
+
+	if !utils.CheckPhoneValidity(user.Phone) {
+		return errors.ErrPhoneInvalid.Error()
+	}
+
+	if !utils.CheckPasswordValidity(user.Password) {
+		return errors.ErrPasswordInvalid.Error()
+	}
+
+	if !utils.CheckNameValidity(user.FirstName) {
+		return errors.ErrFirstNameInvalid.Error()
+	}
+
+	if !utils.CheckNameValidity(user.LastName) {
+		return errors.ErrLastNameInvalid.Error()
+	}
+
+	hashedPassword, err := utils.HashPassword(user.Password)
+	if err != nil {
+		log.GetLog().Errorf("Unable to hash password. error: %v", err)
+		return err
+	}
+	user.Password = hashedPassword
+
+	err = u.UserRepo.Create(ctx, user)
+	if err != nil && !strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+		log.GetLog().Errorf("Unable to create user. error: %v", err)
+		return err
+	}
+	if err != nil && strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+		return errors.ErrEmailExists.Error()
+	}
+
+	encryptedEmail, err := utils.Encrypt(user.Email)
+	if err == nil {
+		emailBody := fmt.Sprintf(`Hello %s,<br><br>
+	To verify your email address, please click the link below:<br><br>
+	
+	<a href="http://localhost:8080/api/user/verify-email?c=%s&callback=http://localhost:5173">Verify Email</a><br><br>
+
+	Yours,<br>
+	The Synapse team`, user.FirstName, encryptedEmail)
+
+		err = utils.SendEmail(user.Email, "Barista account verification", emailBody)
+		if err != nil {
+			log.GetLog().Errorf("Unable to send email. error: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func (u UserHandler) Login(ctx context.Context, user *models.User) (string, string, error) {
+	foundUser, err := u.UserRepo.GetByEmail(ctx, user.Email)
+	if err != nil {
+		log.GetLog().Errorf("Incorrect name or password. error: %v", err)
+		return "", "", err
+	}
+
+	if !utils.CheckPasswordHash(user.Password, foundUser.Password) {
+		return "", "", errors.ErrPasswordIncorrect.Error()
+	}
+
+	token, refreshToken, err := utils.TokenGenerator(foundUser.Email, foundUser.FirstName, foundUser.LastName, string(foundUser.ID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to generate tokens. error: %v", err)
+	}
+
+	utils.UpdateAllTokens(u.Postgres, token, refreshToken, string(foundUser.ID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to update tokens. error: %v", err)
+	}
+
+	err = u.TokenRepo.Create(ctx, token, refreshToken, foundUser.ID, time.Now())
+	if err != nil {
+		log.GetLog().Errorf("Unable to create token. error: %v", err)
+		return "", "", err
+	}
+
+	return token, refreshToken, nil
+}
+
+func (u UserHandler) VerifyEmail(ctx context.Context, email string) error {
+	decryptedEmail, err := utils.Decrypt(email)
+	if err != nil {
+		log.GetLog().Errorf("Unable to decrypt email. error: %v", err)
+		return err
+	}
+
+	err = u.UserRepo.Verify(ctx, decryptedEmail)
+	if err != nil {
+		log.GetLog().Errorf("Unable to verify user. error: %v", err)
+		return err
+	}
+
+	return nil
+}
 
 func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) error {
 	// Find the user based on email
@@ -71,108 +175,18 @@ func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) erro
 	return nil
 }
 
-func (u UserHandler) Login(ctx context.Context, user *models.User) (string, string, error) {
-	foundUser, err := u.UserRepo.GetByEmail(ctx, user.Email)
+func (u UserHandler) UserProfile(ctx context.Context, incoming_token string) (*models.User, error) {
+	userID, err := u.TokenRepo.GetIDByTokenString(ctx, incoming_token)
 	if err != nil {
-		log.GetLog().Errorf("Incorrect name or password. error: %v", err)
-		return "", "", err
+		log.GetLog().Errorf("Unable to retrieve user ID via token string")
+		return nil, err
 	}
 
-	if !utils.CheckPasswordHash(user.Password, foundUser.Password) {
-		return "", "", errors.ErrPasswordIncorrect.Error()
-	}
-
-	token, refreshToken, err := utils.TokenGenerator(foundUser.Email, foundUser.FirstName, foundUser.LastName, string(foundUser.ID))
+	user, err := u.UserRepo.GetByID(ctx, userID)
 	if err != nil {
-		log.GetLog().Errorf("Unable to generate tokens. error: %v", err)
+		log.GetLog().Error(err)
+		return nil, err
 	}
 
-	utils.UpdateAllTokens(u.Postgres, token, refreshToken, string(foundUser.ID))
-	if err != nil {
-		log.GetLog().Errorf("Unable to update tokens. error: %v", err)
-	}
-
-	err = u.TokenRepo.Create(ctx, token, refreshToken, user.ID, time.Now())
-	if err != nil {
-		log.GetLog().Errorf("Unable to create token. error: %v", err)
-		return "", "", err
-	}
-
-	return token, refreshToken, nil
-}
-
-func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
-	user.ID = rand.Int31()
-
-	if !utils.CheckEmailValidity(user.Email) {
-		return errors.ErrEmailInvalid.Error()
-	}
-
-	if !utils.CheckPhoneValidity(user.Phone) {
-		return errors.ErrPhoneInvalid.Error()
-	}
-
-	if !utils.CheckPasswordValidity(user.Password) {
-		return errors.ErrPasswordInvalid.Error()
-	}
-
-	if !utils.CheckNameValidity(user.FirstName) {
-		return errors.ErrFirstNameInvalid.Error()
-	}
-
-	if !utils.CheckNameValidity(user.LastName) {
-		return errors.ErrLastNameInvalid.Error()
-	}
-
-	hashedPassword, err := utils.HashPassword(user.Password)
-	if err != nil {
-		log.GetLog().Errorf("Unable to hash password. error: %v", err)
-		return err
-	}
-	user.Password = hashedPassword
-
-	err = u.UserRepo.Create(ctx, user)
-	if err != nil && !strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-		log.GetLog().Errorf("Unable to create user. error: %v", err)
-		return err
-	}
-	if err != nil && strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-		return errors.ErrEmailExists.Error()
-	}
-
-	encryptedEmail, err := utils.Encrypt(user.Email)
-	if err == nil {
-		log.GetLog().Errorf("Unable to encrypt email. error: %v", err)
-
-		emailBody := fmt.Sprintf(`Hello %s,<br><br>
-	To verify your email address, please click the link below:<br><br>
-	
-	<a href="http://localhost:8080/api/user/verify-email?c=%s&callback=http://localhost:5173">Verify Email</a><br><br>
-
-	Yours,<br>
-	The Synapse team`, user.FirstName, encryptedEmail)
-
-		err = utils.SendEmail(user.Email, "Barista account verification", emailBody)
-		if err != nil {
-			log.GetLog().Errorf("Unable to send email. error: %v", err)
-		}
-	}
-
-	return nil
-}
-
-func (u UserHandler) VerifyEmail(ctx context.Context, email string) error {
-	decryptedEmail, err := utils.Decrypt(email)
-	if err != nil {
-		log.GetLog().Errorf("Unable to decrypt email. error: %v", err)
-		return err
-	}
-
-	err = u.UserRepo.Verify(ctx, decryptedEmail)
-	if err != nil {
-		log.GetLog().Errorf("Unable to verify user. error: %v", err)
-		return err
-	}
-
-	return nil
+	return user, nil
 }
