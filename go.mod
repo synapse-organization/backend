@@ -5,6 +5,7 @@ go 1.22.1
 require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cast v1.6.0

@@ -6,10 +6,11 @@ import (
 	"barista/pkg/models"
 	"barista/pkg/utils"
 	"context"
-	"github.com/gin-gonic/gin"
-	"github.com/spf13/cast"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/cast"
 )
 
 var (
@@ -61,7 +62,7 @@ func (u User) Login(c *gin.Context) {
 		return
 	}
 
-	token, refreshToken, err := u.Handler.Login(ctx, &user)
+	token, err := u.Handler.Login(ctx, &user)
 	if err != nil {
 		errValue := err.Error()
 		if !utils.IsCommonError(err) {
@@ -74,9 +75,8 @@ func (u User) Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":       "ok",
-		"token":        token,
-		"refreshToken": refreshToken,
+		"status": "ok",
+		"token":  token,
 	})
 	return
 }
@@ -140,12 +140,12 @@ func (u User) UserProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status": "ok",
+		"status":     "ok",
 		"first_name": user.FirstName,
-		"last_name": user.LastName,
-		"email": user.Email,
-		"phone": user.Phone,
-		"sex": user.Sex,
+		"last_name":  user.LastName,
+		"email":      user.Email,
+		"phone":      user.Phone,
+		"sex":        user.Sex,
 	})
 	return
 }
