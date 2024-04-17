@@ -95,7 +95,7 @@ func (u User) VerifyEmail(c *gin.Context) {
 	err := u.Handler.VerifyEmail(ctx, cast.ToString(email))
 	if err != nil {
 		log.GetLog().Errorf("Unable to verify email. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
 
@@ -118,7 +118,7 @@ func (u User) ForgetPassword(c *gin.Context) {
 	err = u.Handler.ForgetPassword(ctx, &user)
 	if err != nil {
 		log.GetLog().Errorf("Unable to process forget-password. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
 
@@ -141,8 +141,8 @@ func (u User) UserProfile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": "ok",
-		"first name": user.FirstName,
-		"last name": user.LastName,
+		"first_name": user.FirstName,
+		"last_name": user.LastName,
 		"email": user.Email,
 		"phone": user.Phone,
 		"sex": user.Sex,
