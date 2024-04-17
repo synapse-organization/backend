@@ -10,7 +10,7 @@ import (
 
 type AuthMiddleware struct {
 	IgnorePaths []string
-	Postgres *pgx.Conn
+	Postgres    *pgx.Conn
 }
 
 func (a AuthMiddleware) IsAuthorized(c *gin.Context) {
@@ -29,12 +29,6 @@ func (a AuthMiddleware) IsAuthorized(c *gin.Context) {
 		return
 	}
 
-	if token[0] != "10" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid token"})
-		c.Abort()
-		return
-	}
 	c.Set("email", claims.Email)
-	c.Set("uid", claims.Uid)
 	c.Next()
 }

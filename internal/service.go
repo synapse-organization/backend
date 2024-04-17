@@ -38,7 +38,7 @@ func Run() {
 		},
 	)
 
-	authMiddleware := middlewares.AuthMiddleware{}
+	authMiddleware := middlewares.AuthMiddleware{Postgres: postgres}
 
 	service := StartService()
 	apiV1 := service.engine.Group("/api")
