@@ -63,11 +63,13 @@ func (u User) Login(c *gin.Context) {
 
 	token, refreshToken, err := u.Handler.Login(ctx, &user)
 	if err != nil {
+		errValue := err.Error()
 		if !utils.IsCommonError(err) {
-			log.GetLog().Errorf("Unable to sign up. error: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to sign up"})
+			log.GetLog().Errorf("Unable to login. error: %v", err)
+			errValue = "Unable to login"
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errValue})
 		return
 	}
 
@@ -93,7 +95,7 @@ func (u User) VerifyEmail(c *gin.Context) {
 	err := u.Handler.VerifyEmail(ctx, cast.ToString(email))
 	if err != nil {
 		log.GetLog().Errorf("Unable to verify email. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
 
