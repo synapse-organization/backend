@@ -11,6 +11,7 @@ type RatingsRepo interface {
 	Create(ctx context.Context, rating *models.Rating) error
 	GetByID(ctx context.Context, id int32) (*models.Rating, error)
 	GetByCafeID(ctx context.Context, cafeID int32) ([]*models.Rating, error)
+	GetCafesRating(ctx context.Context, cafeID int32) (float64, error)
 	GetByUserID(ctx context.Context, userID int32) ([]*models.Rating, error)
 }
 
@@ -26,7 +27,8 @@ func NewRatingsRepoImp(postgres *pgx.Conn) *RatingsRepoImp {
 				user_id INTEGER,
 				rating INTEGER,
 				FOREIGN KEY (cafe_id) REFERENCES cafes(id),
-				FOREIGN KEY (user_id) REFERENCES users(id)
+				FOREIGN KEY (user_id) REFERENCES users(id),
+    			Unique(cafe_id, user_id)
 			);`)
 	if err != nil {
 		log.GetLog().WithError(err).WithField("table", "ratings").Fatal("Unable to create table")
@@ -69,6 +71,31 @@ func (r *RatingsRepoImp) GetByCafeID(ctx context.Context, cafeID int32) ([]*mode
 		ratings = append(ratings, &rating)
 	}
 	return ratings, nil
+}
+
+func (r *RatingsRepoImp) GetCafesRating(ctx context.Context, cafeID int32) (float64, error) {
+	rows, err := r.postgres.Query(ctx, "SELECT rating FROM ratings WHERE cafe_id = $1", cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get ratings by cafe id. error: %v", err)
+	}
+	defer rows.Close()
+
+	var sum float64
+	var count int
+	for rows.Next() {
+		var rating int
+		err = rows.Scan(&rating)
+		if err != nil {
+			log.GetLog().Errorf("Unable to scan rating. error: %v", err)
+			return 0, err
+		}
+		sum += float64(rating)
+		count++
+	}
+	if count == 0 {
+		return 0, nil
+	}
+	return sum / float64(count), nil
 }
 
 func (r *RatingsRepoImp) GetByUserID(ctx context.Context, userID int32) ([]*models.Rating, error) {
