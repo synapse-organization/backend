@@ -1,3 +1,5 @@
 .idea
 vendor
 deploy/backend.tar
+tmp
+bin

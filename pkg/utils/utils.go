@@ -6,22 +6,23 @@ import (
 	"barista/pkg/models"
 	"context"
 	"github.com/jackc/pgx/v5"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
+	"math/rand"
 	"net/mail"
 	"strings"
-	"math/rand"
 	"time"
 )
 
-
-func GenerateRandomPassword(length int) (string) {
+func GenerateRandomPassword(length int) string {
 	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    random := rand.New(rand.NewSource(time.Now().UnixNano()))
-    password := make([]byte, length)
-    for i := range password {
-        password[i] = charset[random.Intn(len(charset))]
-    }
-    return string(password)
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
+	password := make([]byte, length)
+	for i := range password {
+		password[i] = charset[random.Intn(len(charset))]
+	}
+	return string(password)
 }
 
 func SplitMethodPrefix(methodName string) (string, string) {
@@ -38,7 +39,36 @@ func NewPostgres(option models.Postgres) *pgx.Conn {
 	if err != nil {
 		log.GetLog().Fatalf("Unable to create connection pool. host: %v, error: %v", option.Host, err)
 	}
+
+	_, err = conn.Exec(context.Background(),
+		`DROP SCHEMA public CASCADE;
+			CREATE SCHEMA public;
+			GRANT ALL ON SCHEMA public TO postgres;
+			GRANT ALL ON SCHEMA public TO public;`)
+	if err != nil {
+		log.GetLog().Fatal("Unable to create schema")
+	} else {
+		log.GetLog().Info("Schema created")
+	}
+
 	return conn
+}
+
+func ConnectDB(cfg models.Mongo) *mongo.Client {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.GetMongoURL()))
+	if err != nil {
+		log.GetLog().Fatal("Error: " + err.Error())
+	}
+
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		log.GetLog().Fatal("Error: " + err.Error())
+	}
+	log.GetLog().Println("Connected to MongoDB")
+	return client
 }
 
 func HashPassword(password string) (string, error) {

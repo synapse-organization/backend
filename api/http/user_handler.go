@@ -36,17 +36,17 @@ func (u User) SignUp(c *gin.Context) {
 
 	err = u.Handler.SignUp(ctx, &data)
 	if err != nil {
-		errValue := err.Error()
 		if !utils.IsCommonError(err) {
 			log.GetLog().Errorf("Unable to sign up. error: %v", err)
-			errValue = "Unable to sign up"
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to sign up"})
+			return
 		}
 
-		c.JSON(500, gin.H{"error": errValue})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(200, gin.H{"status": "ok"})
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	return
 }
 

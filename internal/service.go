@@ -7,9 +7,10 @@ import (
 	"barista/pkg/models"
 	"barista/pkg/repo"
 	"barista/pkg/utils"
-	"os"
-
 	"github.com/spf13/cast"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"os"
 )
 
 func getPostgres() (string, int) {
@@ -26,6 +27,25 @@ func getPostgres() (string, int) {
 	return address, cast.ToInt(port)
 }
 
+func getMongo() (string, int) {
+	address, ok := os.LookupEnv("mongo_address")
+	if !ok {
+		return "localhost", 27017
+	}
+
+	port, ok := os.LookupEnv("mongo_port")
+	if !ok {
+		return "localhost", 27017
+	}
+
+	return address, cast.ToInt(port)
+}
+
+func GetCollection(client *mongo.Client, collectionName string) *mongo.Collection {
+	collection := client.Database("image-server").Collection(collectionName)
+	return collection
+}
+
 func Run() {
 	address, port := getPostgres()
 	postgres := utils.NewPostgres(
@@ -37,6 +57,17 @@ func Run() {
 			DbName:   "postgres",
 		},
 	)
+
+	address, port = getMongo()
+	mongoDb := utils.ConnectDB(
+		models.Mongo{
+			Host:     address,
+			Port:     port,
+			UserName: "root",
+			Password: "root",
+		},
+	)
+	mongoDbOpt := options.GridFSBucket().SetName("image-server")
 
 	authMiddleware := middlewares.AuthMiddleware{Postgres: postgres}
 
@@ -57,13 +88,21 @@ func Run() {
 	user.Handle(string(models.GET), "user-profile", userHttpHandler.UserProfile)
 
 	cafeRepo := repo.NewCafeRepoImp(postgres)
-	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo}
+	imageRepo := repo.NewImageRepoImp(postgres)
+	ratingRepo := repo.NewRatingsRepoImp(postgres)
+	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, ImageRepo: imageRepo}
 	cafeHttpHandler := http.Cafe{Handler: &cafeHandler}
 
 	cafe := apiV1.Group("/cafe")
 	cafe.Handle(string(models.POST), "create", cafeHttpHandler.Create)
 	cafe.Handle(string(models.GET), "get-cafe", cafeHttpHandler.GetCafe)
 	cafe.Handle(string(models.GET), "search-cafe", cafeHttpHandler.SearchCafe)
+
+	imageHandler := http.ImageHandler{MongoDb: mongoDb, MongoOpt: mongoDbOpt, ImageRepo: imageRepo}
+	image := apiV1.Group("/image")
+	image.Handle(string(models.POST), "upload", imageHandler.UploadImage)
+	image.Handle(string(models.GET), "download", imageHandler.DownloadImage)
+	image.Handle(string(models.POST), "submit", imageHandler.SubmitImage)
 
 	service.Run(":8080")
 }

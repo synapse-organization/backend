@@ -16,6 +16,8 @@ services:
     environment:
       - postgres_address=postgres_backend
       - postgres_port=5432
+      - mongo_address=mongo
+      - mongo_port=27017
     deploy:
         restart_policy:
             condition: on-failure
@@ -44,3 +46,22 @@ services:
       resources:
         limits:
           memory: 200M
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - 27017:27017
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: root
+      ME_CONFIG_MONGODB_URL: mongodb://root:root@mongo:27017/
+      ME_CONFIG_BASICAUTH: false

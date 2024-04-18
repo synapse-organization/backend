@@ -37,9 +37,12 @@ func NewUserRepoImp(postgres *pgx.Conn) *UserRepoImp {
     			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     			is_verified BOOLEAN DEFAULT FALSE,
     			UNIQUE(email))`)
+
 	if err != nil {
 		log.GetLog().WithError(err).WithField("table", "users").Fatal("Unable to create table")
 	}
+
+	_, err = postgres.Exec(context.Background(), `INSERT INTO users (id) VALUES (12) ON CONFLICT DO NOTHING`)
 	return &UserRepoImp{postgres: postgres}
 }
 
