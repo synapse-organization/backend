@@ -8,6 +8,7 @@ import (
 	"context"
 	"net/http"
 	"time"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cast"
@@ -130,9 +131,14 @@ func (u User) UserProfile(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
-	incoming_token := c.Request.Header["Authorization"][0]
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get token ID.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get token ID"})
+		return
+	}
 
-	user, err := u.Handler.UserProfile(ctx, incoming_token)
+	user, err := u.Handler.UserProfile(ctx, fmt.Sprintf("%v", userID))
 	if err != nil {
 		log.GetLog().Errorf("Unable to get user profile. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
@@ -146,6 +152,38 @@ func (u User) UserProfile(c *gin.Context) {
 		"email":      user.Email,
 		"phone":      user.Phone,
 		"sex":        user.Sex,
+	})
+	return
+}
+
+func (u User) EditProfile(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var newDetail models.User
+	err := c.ShouldBindJSON(&newDetail)
+	if err != nil {
+		log.GetLog().Errorf("Unable to bind json. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get token ID.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get token ID"})
+		return
+	}
+
+	err = u.Handler.EditProfile(ctx, &newDetail, fmt.Sprintf("%v", userID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to edit profile. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
 	})
 	return
 }
