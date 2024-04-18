@@ -2,7 +2,6 @@ package utils
 
 import (
 	"barista/pkg/repo"
-	"errors"
 	"os"
 	"time"
 
@@ -12,7 +11,7 @@ import (
 )
 
 type SignedDetails struct {
-	Uid        string
+	Uid        int32
 	First_Name string
 	Last_Name  string
 	Email      string
@@ -22,7 +21,7 @@ type SignedDetails struct {
 
 var SECRET_KEY = os.Getenv("SECRET_KEY")
 
-func TokenGenerator(email, firstname, lastname, uid string) (*SignedDetails, string, error) {
+func TokenGenerator(uid int32, email, firstname, lastname string) (*SignedDetails, string, error) {
 	tokenID := uuid.New().ID()
 
 	claims := &SignedDetails{
@@ -75,23 +74,6 @@ func ValidateToken(postgres *pgx.Conn, signedToken string) (claims *SignedDetail
 	}
 
 	return claims, msg
-}
-
-func GetClaims(signedToken string) (claims *SignedDetails, err error) {
-	token, err := jwt.ParseWithClaims(signedToken, &SignedDetails{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(SECRET_KEY), nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	claims, ok := token.Claims.(*SignedDetails)
-	if !ok {
-		return nil, errors.New("the token is invalid")
-	}
-
-	return claims, err
 }
 
 // func UpdateAllTokens(postgres *pgx.Conn, signedToken, refreshToken, userID string) (newSignedToken, newSignedRefreshToken string, err error) {
