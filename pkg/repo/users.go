@@ -4,6 +4,7 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
+
 	"github.com/jackc/pgx/v5"
 )
 
@@ -17,7 +18,11 @@ type UsersRepo interface {
 	GetByID(ctx context.Context, id int32) (*models.User, error)
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	DeleteByID(ctx context.Context, id int32) error
+	UpdateFirstName(ctx context.Context, id int32, newFirstName string) error
+	UpdateLastName(ctx context.Context, id int32, newLastName string) error
 	UpdatePassword(ctx context.Context, id int32, newPassword string) error
+	UpdateSex(ctx context.Context, id int32, newSex string) error
+	UpdatePhone(ctx context.Context, id int32, newPhone int32) error
 }
 
 type UserRepoImp struct {
@@ -88,10 +93,42 @@ func (u *UserRepoImp) DeleteByID(ctx context.Context, id int32) error {
 	return err
 }
 
+func (u *UserRepoImp) UpdateFirstName(ctx context.Context, id int32, newFirstName string) error {
+	_, err := u.postgres.Exec(ctx, "UPDATE users SET first_name = $1 WHERE id = $2", newFirstName, id)
+	if err != nil {
+		log.GetLog().Errorf("Unable to update user's first name. error: %v", err)
+	}
+	return nil
+}
+
+func (u *UserRepoImp) UpdateLastName(ctx context.Context, id int32, newLastName string) error {
+	_, err := u.postgres.Exec(ctx, "UPDATE users SET last_name = $1 WHERE id = $2", newLastName, id)
+	if err != nil {
+		log.GetLog().Errorf("Unable to update user's last name. error: %v", err)
+	}
+	return nil
+}
+
 func (u *UserRepoImp) UpdatePassword(ctx context.Context, id int32, newPassword string) error {
 	_, err := u.postgres.Exec(ctx, "UPDATE users SET password = $1 WHERE id = $2", newPassword, id)
 	if err != nil {
 		log.GetLog().Errorf("Unable to update user's password. error: %v", err)
+	}
+	return nil
+}
+
+func (u *UserRepoImp) UpdateSex(ctx context.Context, id int32, newSex string) error {
+	_, err := u.postgres.Exec(ctx, "UPDATE users SET sex = $1 WHERE id = $2", newSex, id)
+	if err != nil {
+		log.GetLog().Errorf("Unable to update user's sex. error: %v", err)
+	}
+	return nil
+}
+
+func (u *UserRepoImp) UpdatePhone(ctx context.Context, id int32, newPhone int32) error {
+	_, err := u.postgres.Exec(ctx, "UPDATE users SET phone = $1 WHERE id = $2", newPhone, id)
+	if err != nil {
+		log.GetLog().Errorf("Unable to update user's phone number. error: %v", err)
 	}
 	return nil
 }

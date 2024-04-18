@@ -85,7 +85,8 @@ func Run() {
 	user.Handle(string(models.GET), "get-user", authMiddleware.IsAuthorized, userHttpHandler.GetUser)
 	user.Handle(string(models.GET), "verify-email", userHttpHandler.VerifyEmail)
 	user.Handle(string(models.POST), "forget-password", userHttpHandler.ForgetPassword)
-	user.Handle(string(models.GET), "user-profile", userHttpHandler.UserProfile)
+	user.Handle(string(models.GET), "user-profile", authMiddleware.IsAuthorized, userHttpHandler.UserProfile)
+	user.Handle(string(models.PUT), "edit-profile", authMiddleware.IsAuthorized, userHttpHandler.EditProfile)
 
 	cafeRepo := repo.NewCafeRepoImp(postgres)
 	imageRepo := repo.NewImageRepoImp(postgres)

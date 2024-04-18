@@ -95,7 +95,7 @@ func (u UserHandler) Login(ctx context.Context, user *models.User) (string, erro
 		return "", errors.ErrPasswordIncorrect.Error()
 	}
 
-	claims, token, err := utils.TokenGenerator(foundUser.Email, foundUser.FirstName, foundUser.LastName, strconv.Itoa(int(foundUser.ID)))
+	claims, token, err := utils.TokenGenerator(foundUser.ID, foundUser.Email, foundUser.FirstName, foundUser.LastName)
 	if err != nil {
 		log.GetLog().Errorf("Unable to generate tokens. error: %v", err)
 	}
@@ -172,23 +172,77 @@ func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) erro
 	return nil
 }
 
-func (u UserHandler) UserProfile(ctx context.Context, incoming_token string) (*models.User, error) {
-	claims, err := utils.GetClaims(incoming_token)
+func (u UserHandler) UserProfile(ctx context.Context, userID string) (*models.User, error) {
+	user_id, err := strconv.Atoi(userID)
 	if err != nil {
-		log.GetLog().Errorf("Unable to get claims. error: %v", err)
+		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
 		return nil, err
 	}
 
-	userID, err := strconv.Atoi(claims.Uid)
+	user, err := u.UserRepo.GetByID(ctx, int32(user_id))
 	if err != nil {
-		return nil, err
-	}
-
-	user, err := u.UserRepo.GetByID(ctx, int32(userID))
-	if err != nil {
-		log.GetLog().Error(err)
+		log.GetLog().Errorf("Unable to get user by id. errror: %v", err)
 		return nil, err
 	}
 
 	return user, nil
+}
+
+func (u UserHandler) EditProfile(ctx context.Context, newDetail *models.User, userID string) error {
+	user_id, err := strconv.Atoi(userID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to convert user id to int32. error: %v", err)
+		return err
+	}
+
+	foundUser, err := u.UserRepo.GetByID(ctx, int32(user_id))
+	if err != nil {
+		log.GetLog().Errorf("Incorrect user id. error: %v", err)
+		return err
+	}
+
+	if newDetail.FirstName != foundUser.FirstName && newDetail.FirstName != "" {
+		if !utils.CheckNameValidity(newDetail.FirstName) {
+			return errors.ErrFirstNameInvalid.Error()
+		}
+	
+		err = u.UserRepo.UpdateFirstName(ctx, int32(user_id), newDetail.FirstName)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update user's first name. error: %v", err)
+			return err
+		}
+	}
+
+	if newDetail.LastName != foundUser.LastName && newDetail.LastName != "" {
+		if !utils.CheckNameValidity(newDetail.LastName) {
+			return errors.ErrLastNameInvalid.Error()
+		}
+
+		err = u.UserRepo.UpdateLastName(ctx, int32(user_id), newDetail.LastName)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update user's last name. error: %v", err)
+		}
+	}
+
+	if newDetail.Sex != foundUser.Sex && newDetail.Sex != 0 {
+		err = u.UserRepo.UpdateSex(ctx, int32(user_id), fmt.Sprintf("%v", newDetail.Sex))
+		if err != nil {
+			log.GetLog().Errorf("Unable to update user's sex. error: %v", err)
+			return err
+		}
+	}
+
+	if newDetail.Phone != foundUser.Phone && newDetail.Phone != 0 {
+		if !utils.CheckPhoneValidity(newDetail.Phone) {
+			return errors.ErrPhoneInvalid.Error()
+		}
+	
+		err = u.UserRepo.UpdatePhone(ctx, int32(user_id), int32(newDetail.Phone))
+		if err != nil {
+			log.GetLog().Errorf("Unable to update user's phone number. error: %v", err)
+			return err
+		}
+	}
+
+	return err
 }
