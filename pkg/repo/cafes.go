@@ -5,6 +5,7 @@ import (
 	"barista/pkg/models"
 	"context"
 	"github.com/jackc/pgx/v5"
+	"math/rand"
 	"strings"
 )
 
@@ -66,6 +67,7 @@ func NewCafeRepoImp(postgres *pgx.Conn) *CafesRepoImp {
 }
 
 func (c *CafesRepoImp) Create(ctx context.Context, cafe *models.Cafe) error {
+	cafe.ID = rand.Int31()
 	categories := ""
 	for i, category := range cafe.Categories {
 		categories += string(category)
