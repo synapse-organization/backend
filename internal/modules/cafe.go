@@ -5,6 +5,7 @@ import (
 	"barista/pkg/models"
 	"barista/pkg/repo"
 	"context"
+	"strconv"
 )
 
 type CafeHandler struct {
@@ -55,4 +56,20 @@ func (c CafeHandler) SearchCafe(ctx context.Context, name string, address string
 	}
 
 	return cafes, err
+}
+
+func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID string) (*models.Cafe, error) {
+	cafe_id, err := strconv.Atoi(cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+		return nil, err
+	}
+
+	cafe, err := c.CafeRepo.GetByID(ctx, int32(cafe_id))
+	if err != nil {
+		log.GetLog().Errorf("Cafe id does not exist. error: %v", err)
+		return nil, err
+	}
+
+	return cafe, nil
 }

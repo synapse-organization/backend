@@ -5,8 +5,9 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Cafe struct {
@@ -67,4 +68,29 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"cafes": cafes})
 
+}
+
+func (h Cafe) PublicCafeProfile(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	cafeID := c.Request.Header["Authorization"][0]
+	if cafeID == "" {
+		log.GetLog().Errorf("cafe id is empty")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cafe is is empty"})
+		return
+	}
+
+	cafe, err := h.Handler.PublicCafeProfile(ctx, cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+		"cafe": cafe,
+	})
+	return
 }
