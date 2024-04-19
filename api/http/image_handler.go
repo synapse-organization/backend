@@ -27,7 +27,7 @@ type ImageHandler struct {
 func (h ImageHandler) UploadImage(c *gin.Context) {
 	file, header, err := c.Request.FormFile("image")
 	if err != nil {
-		log.GetLog().Fatal(err)
+		log.GetLog().Error(err)
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -37,13 +37,13 @@ func (h ImageHandler) UploadImage(c *gin.Context) {
 		h.MongoDb.Database("image-server"), h.MongoOpt,
 	)
 	if err != nil {
-		log.GetLog().Fatal(err)
+		log.GetLog().Error(err)
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	buf := bytes.NewBuffer(nil)
 	if _, err := io.Copy(buf, file); err != nil {
-		log.GetLog().Fatal(err)
+		log.GetLog().Error(err)
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -53,7 +53,7 @@ func (h ImageHandler) UploadImage(c *gin.Context) {
 		filename,
 	)
 	if err != nil {
-		log.GetLog().Fatal(err)
+		log.GetLog().Error(err)
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -61,14 +61,14 @@ func (h ImageHandler) UploadImage(c *gin.Context) {
 
 	fileSize, err := uploadStream.Write(buf.Bytes())
 	if err != nil {
-		log.GetLog().Fatal(err)
+		log.GetLog().Error(err)
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	fileId, err := json.Marshal(uploadStream.FileID)
 	if err != nil {
-		log.GetLog().Fatal(err)
+		log.GetLog().Error(err)
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -81,7 +81,7 @@ func (h ImageHandler) DownloadImage(c *gin.Context) {
 
 	objID, err := primitive.ObjectIDFromHex(imageId)
 	if err != nil {
-		log.GetLog().Fatal(err)
+		log.GetLog().Error(err)
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -93,7 +93,7 @@ func (h ImageHandler) DownloadImage(c *gin.Context) {
 	var buf bytes.Buffer
 	_, err = bucket.DownloadToStream(objID, &buf)
 	if err != nil {
-		log.GetLog().Fatal(err)
+		log.GetLog().Error(err)
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}

@@ -4,7 +4,7 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type RatingsRepo interface {
@@ -16,10 +16,10 @@ type RatingsRepo interface {
 }
 
 type RatingsRepoImp struct {
-	postgres *pgx.Conn
+	postgres *pgxpool.Pool
 }
 
-func NewRatingsRepoImp(postgres *pgx.Conn) *RatingsRepoImp {
+func NewRatingsRepoImp(postgres *pgxpool.Pool) *RatingsRepoImp {
 	_, err := postgres.Exec(context.Background(),
 		`CREATE TABLE IF NOT EXISTS ratings (
 				id INTEGER PRIMARY KEY,

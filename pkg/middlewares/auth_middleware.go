@@ -2,15 +2,15 @@ package middlewares
 
 import (
 	"barista/pkg/utils"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
 )
 
 type AuthMiddleware struct {
 	IgnorePaths []string
-	Postgres    *pgx.Conn
+	Postgres    *pgxpool.Pool
 }
 
 func (a AuthMiddleware) IsAuthorized(c *gin.Context) {

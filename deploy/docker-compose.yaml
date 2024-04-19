@@ -7,25 +7,25 @@ volumes:
   broker_data:
 
 services:
-  backend_app:
-    image: irania9o/synapse_backend:latest
-    container_name: 'backend_app'
-    restart: always
-    ports:
-      - 8080:8080
-    environment:
-      - postgres_address=postgres_backend
-      - postgres_port=5432
-      - mongo_address=mongo
-      - mongo_port=27017
-    deploy:
-        restart_policy:
-            condition: on-failure
-            delay: 5s
-            max_attempts: 5
-        resources:
-            limits:
-              memory: 200M
+#  backend_app:
+#    image: irania9o/synapse_backend:latest
+#    container_name: 'backend_app'
+#    restart: always
+#    ports:
+#      - 8080:8080
+#    environment:
+#      - postgres_address=postgres_backend
+#      - postgres_port=5432
+#      - mongo_address=mongo
+#      - mongo_port=27017
+#    deploy:
+#        restart_policy:
+#            condition: on-failure
+#            delay: 5s
+#            max_attempts: 5
+#        resources:
+#            limits:
+#              memory: 200M
   postgres_backend:
     image: postgres:alpine3.19
     volumes:

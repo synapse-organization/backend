@@ -5,7 +5,7 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
@@ -34,24 +34,13 @@ func SplitMethodPrefix(methodName string) (string, string) {
 	return "", methodName
 }
 
-func NewPostgres(option models.Postgres) *pgx.Conn {
-	conn, err := pgx.Connect(context.Background(), option.GetPostgresURL())
+func NewPostgres(option models.Postgres) *pgxpool.Pool {
+	pool, err := pgxpool.New(context.Background(), option.GetPostgresURL())
 	if err != nil {
 		log.GetLog().Fatalf("Unable to create connection pool. host: %v, error: %v", option.Host, err)
 	}
 
-	_, err = conn.Exec(context.Background(),
-		`DROP SCHEMA public CASCADE;
-			CREATE SCHEMA public;
-			GRANT ALL ON SCHEMA public TO postgres;
-			GRANT ALL ON SCHEMA public TO public;`)
-	if err != nil {
-		log.GetLog().Fatal("Unable to create schema")
-	} else {
-		log.GetLog().Info("Schema created")
-	}
-
-	return conn
+	return pool
 }
 
 func ConnectDB(cfg models.Mongo) *mongo.Client {

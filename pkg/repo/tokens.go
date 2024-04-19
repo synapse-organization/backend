@@ -4,9 +4,8 @@ import (
 	"barista/pkg/log"
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
-
-	"github.com/jackc/pgx/v5"
 )
 
 func init() {
@@ -19,10 +18,10 @@ type TokensRepo interface {
 }
 
 type TokenRepoImp struct {
-	postgres *pgx.Conn
+	postgres *pgxpool.Pool
 }
 
-func NewTokenRepoImp(postgres *pgx.Conn) *TokenRepoImp {
+func NewTokenRepoImp(postgres *pgxpool.Pool) *TokenRepoImp {
 	_, err := postgres.Exec(context.Background(),
 		`CREATE TABLE IF NOT EXISTS tokens (
 				token_id INT PRIMARY KEY,
@@ -35,7 +34,7 @@ func NewTokenRepoImp(postgres *pgx.Conn) *TokenRepoImp {
 	return &TokenRepoImp{postgres: postgres}
 }
 
-func CheckTokenExistence(postgres *pgx.Conn, tokenID int32) (bool, error) {
+func CheckTokenExistence(postgres *pgxpool.Pool, tokenID int32) (bool, error) {
 	var exists bool
 	err := postgres.QueryRow(context.Background(),
 		`SELECT EXISTS
