@@ -1,14 +1,12 @@
 package models
 
-import "time"
-
 type Cafe struct {
 	ID           int32          `json:"id"`
 	OwnerID      int32          `json:"owner_id"`
 	Name         string         `json:"name"`
 	Description  string         `json:"description"`
-	OpeningTime  *time.Time     `json:"opening_time"`
-	ClosingTime  *time.Time     `json:"closing_time"`
+	OpeningTime  int8           `json:"opening_time"`
+	ClosingTime  int8           `json:"closing_time"`
 	Menus        []MenuItem     `json:"menus"`
 	Comments     []Comment      `json:"comments"`
 	Rating       float64        `json:"rating"`
@@ -31,7 +29,7 @@ type ContactInfo struct {
 	Phone    string `json:"phone"`
 	Email    string `json:"email"`
 	Location string `json:"location"`
-	Province string `json:"province"`
-	City     string `json:"city"`
+	Province int    `json:"province"`
+	City     int    `json:"city"`
 	Address  string `json:"address"`
 }
