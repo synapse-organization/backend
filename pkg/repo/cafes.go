@@ -84,6 +84,7 @@ func (c *CafesRepoImp) GetByID(ctx context.Context, id int32) (*models.Cafe, err
 func (c *CafesRepoImp) SearchCafe(ctx context.Context, name string, province string, city string, category string) ([]models.Cafe, error) {
 	var cafes []models.Cafe
 	list := []string{}
+	query := "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories FROM cafes"
 
 	if name != "" {
 		list = append(list, "name LIKE '%"+name+"%'")
@@ -98,7 +99,12 @@ func (c *CafesRepoImp) SearchCafe(ctx context.Context, name string, province str
 		list = append(list, "categories LIKE '%"+category+"%'")
 	}
 
-	rows, err := c.postgres.Query(ctx, "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories FROM cafes WHERE "+strings.Join(list, " AND "))
+	if len(list) > 0 {
+		query += " WHERE " + strings.Join(list, " AND ")
+
+	}
+
+	rows, err := c.postgres.Query(ctx, query)
 	if err != nil {
 		log.GetLog().Errorf("Unable to search cafe. error: %v", err)
 	}
