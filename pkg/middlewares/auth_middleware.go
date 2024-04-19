@@ -16,7 +16,7 @@ type AuthMiddleware struct {
 func (a AuthMiddleware) IsAuthorized(c *gin.Context) {
 
 	token := c.Request.Header["Authorization"]
-	if token[0] == "" {
+	if len(token) == 0 || token[0] == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Token is empty"})
 		c.Abort()
 		return
