@@ -74,7 +74,7 @@ func (h Cafe) PublicCafeProfile(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
-	cafeID := c.Request.Header["Authorization"][0]
+	cafeID := c.GetHeader(http.CanonicalHeaderKey("Cafe-ID"))
 	if cafeID == "" {
 		log.GetLog().Errorf("cafe id is empty")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "cafe is is empty"})
