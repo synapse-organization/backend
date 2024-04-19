@@ -47,6 +47,14 @@ func NewCafeRepoImp(postgres *pgxpool.Pool) *CafesRepoImp {
 		log.GetLog().WithError(err).WithField("table", "cafes").Fatal("Unable to create table")
 	}
 
+	_, err = postgres.Exec(context.Background(), `INSERT INTO cafes (id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, location, province, city, address, categories)
+			VALUES 
+			(1, 12, 'Cafe One', 'A stylish cafe with a focus on specialty coffees and homemade desserts.', 8, 10, 25, '+12345678901', 'cafe_one@example.com', '123 Oak Street', 1, 2, '123 Oak Street, Los Angeles, CA', 'Coffee, Desserts');
+	`)
+	if err != nil {
+		log.GetLog().Errorf("Unable to insert cafes. error: %v", err)
+	}
+
 	return &CafesRepoImp{postgres: postgres}
 }
 

@@ -92,6 +92,7 @@ func Run() {
 	cafe.Handle(string(models.POST), "create", cafeHttpHandler.Create)
 	cafe.Handle(string(models.GET), "get-cafe", cafeHttpHandler.GetCafe)
 	cafe.Handle(string(models.POST), "search-cafe", cafeHttpHandler.SearchCafe)
+	cafe.Handle(string(models.GET), "public-cafe-profile", cafeHttpHandler.PublicCafeProfile)
 
 	imageHandler := http.ImageHandler{MongoDb: mongoDb, MongoOpt: mongoDbOpt, ImageRepo: imageRepo}
 	image := apiV1.Group("/image")
