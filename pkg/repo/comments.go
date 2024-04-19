@@ -4,7 +4,7 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type CommentsRepo interface {
@@ -14,10 +14,10 @@ type CommentsRepo interface {
 }
 
 type CommentsRepoImp struct {
-	postgres *pgx.Conn
+	postgres *pgxpool.Pool
 }
 
-func NewCommentsRepoImp(postgres *pgx.Conn) *CommentsRepoImp {
+func NewCommentsRepoImp(postgres *pgxpool.Pool) *CommentsRepoImp {
 	_, err := postgres.Exec(context.Background(),
 		`CREATE TABLE IF NOT EXISTS comments (
 				id INTEGER PRIMARY KEY,

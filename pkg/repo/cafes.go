@@ -4,7 +4,7 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"math/rand"
 	"strings"
 )
@@ -20,10 +20,10 @@ type CafesRepo interface {
 }
 
 type CafesRepoImp struct {
-	postgres *pgx.Conn
+	postgres *pgxpool.Pool
 }
 
-func NewCafeRepoImp(postgres *pgx.Conn) *CafesRepoImp {
+func NewCafeRepoImp(postgres *pgxpool.Pool) *CafesRepoImp {
 	_, err := postgres.Exec(context.Background(),
 		`CREATE TABLE IF NOT EXISTS cafes (
 				id INTEGER PRIMARY KEY,

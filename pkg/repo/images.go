@@ -4,7 +4,7 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type ImageRepo interface {
@@ -13,10 +13,10 @@ type ImageRepo interface {
 }
 
 type ImageRepoImp struct {
-	postgres *pgx.Conn
+	postgres *pgxpool.Pool
 }
 
-func NewImageRepoImp(postgres *pgx.Conn) *ImageRepoImp {
+func NewImageRepoImp(postgres *pgxpool.Pool) *ImageRepoImp {
 	_, err := postgres.Exec(context.Background(),
 		`CREATE TABLE IF NOT EXISTS images (
 				id TEXT PRIMARY KEY,

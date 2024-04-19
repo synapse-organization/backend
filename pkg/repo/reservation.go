@@ -4,7 +4,7 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type ReservationRepo interface {
@@ -15,10 +15,10 @@ type ReservationRepo interface {
 }
 
 type ReservationRepoImp struct {
-	postgres *pgx.Conn
+	postgres *pgxpool.Pool
 }
 
-func NewReservationRepoImp(postgres *pgx.Conn) *ReservationRepoImp {
+func NewReservationRepoImp(postgres *pgxpool.Pool) *ReservationRepoImp {
 	_, err := postgres.Exec(context.Background(),
 		`CREATE TABLE IF NOT EXISTS reservations (
 				id INTEGER PRIMARY KEY,

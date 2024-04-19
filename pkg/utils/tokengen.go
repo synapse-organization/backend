@@ -2,12 +2,12 @@ package utils
 
 import (
 	"barista/pkg/repo"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"os"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 )
 
 type SignedDetails struct {
@@ -43,7 +43,7 @@ func TokenGenerator(uid int32, email, firstname, lastname string) (*SignedDetail
 	return claims, token, err
 }
 
-func ValidateToken(postgres *pgx.Conn, signedToken string) (claims *SignedDetails, msg string) {
+func ValidateToken(postgres *pgxpool.Pool, signedToken string) (claims *SignedDetails, msg string) {
 	token, err := jwt.ParseWithClaims(signedToken, &SignedDetails{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(SECRET_KEY), nil
 	})
@@ -76,7 +76,7 @@ func ValidateToken(postgres *pgx.Conn, signedToken string) (claims *SignedDetail
 	return claims, msg
 }
 
-// func UpdateAllTokens(postgres *pgx.Conn, signedToken, refreshToken, userID string) (newSignedToken, newSignedRefreshToken string, err error) {
+// func UpdateAllTokens(postgres *pgxpool.Pool, signedToken, refreshToken, userID string) (newSignedToken, newSignedRefreshToken string, err error) {
 // 	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 // 	defer cancel()
 

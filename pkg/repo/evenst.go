@@ -4,7 +4,7 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type EventRepo interface {
@@ -16,10 +16,10 @@ type EventRepo interface {
 }
 
 type EventRepoImp struct {
-	postgres *pgx.Conn
+	postgres *pgxpool.Pool
 }
 
-func NewEventRepoImp(postgres *pgx.Conn) *EventRepoImp {
+func NewEventRepoImp(postgres *pgxpool.Pool) *EventRepoImp {
 	_, err := postgres.Exec(context.Background(),
 		`CREATE TABLE IF NOT EXISTS events (
 				id INTEGER PRIMARY KEY,

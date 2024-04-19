@@ -8,18 +8,17 @@ import (
 	"barista/pkg/utils"
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/jackc/pgx/v5"
 )
 
 type UserHandler struct {
 	UserRepo  repo.UsersRepo
 	TokenRepo repo.TokensRepo
-	Postgres  *pgx.Conn
+	Postgres  *pgxpool.Pool
 }
 
 const (
@@ -205,7 +204,7 @@ func (u UserHandler) EditProfile(ctx context.Context, newDetail *models.User, us
 		if !utils.CheckNameValidity(newDetail.FirstName) {
 			return errors.ErrFirstNameInvalid.Error()
 		}
-	
+
 		err = u.UserRepo.UpdateFirstName(ctx, int32(user_id), newDetail.FirstName)
 		if err != nil {
 			log.GetLog().Errorf("Unable to update user's first name. error: %v", err)
@@ -236,7 +235,7 @@ func (u UserHandler) EditProfile(ctx context.Context, newDetail *models.User, us
 		if !utils.CheckPhoneValidity(newDetail.Phone) {
 			return errors.ErrPhoneInvalid.Error()
 		}
-	
+
 		err = u.UserRepo.UpdatePhone(ctx, int32(user_id), int32(newDetail.Phone))
 		if err != nil {
 			log.GetLog().Errorf("Unable to update user's phone number. error: %v", err)

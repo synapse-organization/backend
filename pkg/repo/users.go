@@ -4,8 +4,7 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
-
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func init() {
@@ -26,10 +25,10 @@ type UsersRepo interface {
 }
 
 type UserRepoImp struct {
-	postgres *pgx.Conn
+	postgres *pgxpool.Pool
 }
 
-func NewUserRepoImp(postgres *pgx.Conn) *UserRepoImp {
+func NewUserRepoImp(postgres *pgxpool.Pool) *UserRepoImp {
 	_, err := postgres.Exec(context.Background(),
 		`CREATE TABLE IF NOT EXISTS users (
     			id INT PRIMARY KEY, 
