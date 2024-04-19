@@ -14,7 +14,12 @@ type CafeHandler struct {
 }
 
 func (c CafeHandler) Create(ctx context.Context, cafe *models.Cafe) error {
-	panic("implement me")
+	err := c.CafeRepo.Create(ctx, cafe)
+	if err != nil {
+		log.GetLog().Errorf("Unable to create cafe. error: %v", err)
+		return err
+	}
+	return nil
 }
 
 func (c CafeHandler) GetCafes() {

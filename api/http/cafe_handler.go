@@ -26,6 +26,13 @@ func (h Cafe) Create(c *gin.Context) {
 	}
 
 	err = h.Handler.Create(ctx, &req)
+	if err != nil {
+		log.GetLog().Errorf("Unable to create cafe. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to create cafe"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
 func (h Cafe) GetCafe(c *gin.Context) {

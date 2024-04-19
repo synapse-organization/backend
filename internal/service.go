@@ -8,7 +8,6 @@ import (
 	"barista/pkg/repo"
 	"barista/pkg/utils"
 	"github.com/spf13/cast"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"os"
 )
@@ -39,11 +38,6 @@ func getMongo() (string, int) {
 	}
 
 	return address, cast.ToInt(port)
-}
-
-func GetCollection(client *mongo.Client, collectionName string) *mongo.Collection {
-	collection := client.Database("image-server").Collection(collectionName)
-	return collection
 }
 
 func Run() {
