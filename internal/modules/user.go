@@ -245,3 +245,20 @@ func (u UserHandler) EditProfile(ctx context.Context, newDetail *models.User, us
 
 	return err
 }
+
+func (u UserHandler) ChangePassword(ctx context.Context, userID int32, password string) error {
+	hashedPassword, err := utils.HashPassword(password)
+	if err != nil {
+		log.GetLog().Errorf("Unable to hash password. error: %v", err)
+		return err
+	}
+
+	err = u.UserRepo.UpdatePassword(ctx, userID, hashedPassword)
+	if err != nil {
+		log.GetLog().Errorf("Unable to update user's password. error: %v", err)
+		return err
+	}
+
+	return nil
+
+}

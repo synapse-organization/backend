@@ -6,9 +6,9 @@ import (
 	"barista/pkg/models"
 	"barista/pkg/utils"
 	"context"
+	"fmt"
 	"net/http"
 	"time"
-	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cast"
@@ -186,4 +186,52 @@ func (u User) EditProfile(c *gin.Context) {
 		"status": "ok",
 	})
 	return
+}
+
+type RequestChangePassword struct {
+	Password  string `json:"password"`
+	Password2 string `json:"password2"`
+}
+
+func (u User) ChangePassword(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var data RequestChangePassword
+	err := c.ShouldBindJSON(&data)
+	if err != nil {
+		log.GetLog().Errorf("Unable to bind json. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get token ID.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get token ID"})
+		return
+	}
+
+	if data.Password != data.Password2 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password not match"})
+		return
+	}
+
+	if !utils.CheckPasswordValidity(data.Password) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password is not valid"})
+		return
+	}
+
+	err = u.Handler.ChangePassword(ctx, userID.(int32), data.Password)
+	if err != nil {
+		log.GetLog().Errorf("Unable to change password. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+	})
+	return
+
 }
