@@ -15,6 +15,7 @@ func init() {
 type TokensRepo interface {
 	Create(ctx context.Context, tokenID int32, token string, userID int32, expiredAt time.Time) error
 	GetIDByTokenString(ctx context.Context, token string) (int32, error)
+	DeleteByID(ctx context.Context, tokenID int32) error
 }
 
 type TokenRepoImp struct {
@@ -47,6 +48,17 @@ func CheckTokenExistence(postgres *pgxpool.Pool, tokenID int32) (bool, error) {
 	return exists, err
 }
 
+func DeleteByID(postgres *pgxpool.Pool, tokenID int32) error {
+	_, err := postgres.Exec(context.Background(),
+		`DELETE FROM tokens
+		WHERE token_id = $1`, tokenID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete token by ID. error: %v", err)
+	}
+
+	return err
+}
+
 func (t *TokenRepoImp) Create(ctx context.Context, tokenID int32, token string, userID int32, expiredAt time.Time) error {
 	_, err := t.postgres.Exec(ctx,
 		`INSERT INTO tokens (token_id, token, expired_at, user_id)
@@ -70,4 +82,15 @@ func (t *TokenRepoImp) GetIDByTokenString(ctx context.Context, token string) (in
 	}
 
 	return userID, err
+}
+
+func (t *TokenRepoImp) DeleteByID(ctx context.Context, tokenID int32) error {
+	_, err := t.postgres.Exec(ctx,
+		`DELETE FROM tokens
+		WHERE token_id = $1`, tokenID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete token by ID. error: %v", err)
+	}
+
+	return err
 }

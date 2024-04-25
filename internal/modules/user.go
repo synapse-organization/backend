@@ -7,6 +7,7 @@ import (
 	"barista/pkg/repo"
 	"barista/pkg/utils"
 	"context"
+	go_error "errors"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"math/rand"
@@ -261,4 +262,19 @@ func (u UserHandler) ChangePassword(ctx context.Context, userID int32, password 
 
 	return nil
 
+}
+
+func (u UserHandler) Logout(ctx context.Context, token string) error {
+	claims, err := utils.ValidateToken(u.Postgres, token)
+	if err != "" {
+		log.GetLog().Errorf("Unable to validate token. error: %v", err)
+		return go_error.New("unable to validate token")
+	}
+
+	err2 := u.TokenRepo.DeleteByID(ctx, claims.Uid)
+	if err2 != nil {
+		return err2
+	}
+
+	return nil
 }

@@ -76,6 +76,8 @@ func Run() {
 	user := apiV1.Group("/user")
 	user.Handle(string(models.POST), "signup", userHttpHandler.SignUp)
 	user.Handle(string(models.POST), "login", userHttpHandler.Login)
+	user.Handle(string(models.POST), "logout", authMiddleware.IsAuthorized, userHttpHandler.Logout)
+	user.Handle(string(models.GET), "get-user", authMiddleware.IsAuthorized, userHttpHandler.GetUser)
 	user.Handle(string(models.GET), "verify-email", userHttpHandler.VerifyEmail)
 	user.Handle(string(models.POST), "forget-password", userHttpHandler.ForgetPassword)
 	user.Handle(string(models.POST), "change-password", authMiddleware.IsAuthorized, userHttpHandler.ChangePassword)
