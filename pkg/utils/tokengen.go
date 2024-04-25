@@ -16,12 +16,13 @@ type SignedDetails struct {
 	Last_Name  string
 	Email      string
 	TokenID    int32 `json:"tid"`
+	Role       int32
 	jwt.StandardClaims
 }
 
 var SECRET_KEY = os.Getenv("SECRET_KEY")
 
-func TokenGenerator(uid int32, email, firstname, lastname string) (*SignedDetails, string, error) {
+func TokenGenerator(uid int32, email, firstname, lastname string, role int32) (*SignedDetails, string, error) {
 	tokenID := uuid.New().ID()
 
 	claims := &SignedDetails{
@@ -30,6 +31,7 @@ func TokenGenerator(uid int32, email, firstname, lastname string) (*SignedDetail
 		Last_Name:  lastname,
 		Email:      email,
 		TokenID:    int32(tokenID),
+		Role:       role,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(10)).Unix(),
 		},

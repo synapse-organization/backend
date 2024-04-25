@@ -7,4 +7,5 @@ type JWTToken struct {
 	Token     string    `json:"token"`
 	ExpiredAt time.Time `json:"expired_at"`
 	UserID    int32     `json:"user_id"`
+	Role      Role      `json:"role"`
 }
