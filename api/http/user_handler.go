@@ -6,9 +6,9 @@ import (
 	"barista/pkg/models"
 	"barista/pkg/utils"
 	"context"
+	"fmt"
 	"net/http"
 	"time"
-	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cast"
@@ -186,4 +186,27 @@ func (u User) EditProfile(c *gin.Context) {
 		"status": "ok",
 	})
 	return
+}
+
+func (u User) Logout(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	token := c.Request.Header["Authorization"]
+	if len(token) == 0 || token[0] == "" {
+		log.GetLog().Error("Token is empty")
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Token is empty"})
+		return
+	}
+
+	err := u.Handler.Logout(ctx, token[0])
+	if err != nil {
+		log.GetLog().Errorf("Unable to logout. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+
 }

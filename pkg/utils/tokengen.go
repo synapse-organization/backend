@@ -70,6 +70,7 @@ func ValidateToken(postgres *pgxpool.Pool, signedToken string) (claims *SignedDe
 
 	if claims.ExpiresAt < time.Now().Local().Unix() {
 		msg = "Token is already expired"
+		repo.DeleteByID(postgres, claims.TokenID)
 		return
 	}
 
