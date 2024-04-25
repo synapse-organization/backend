@@ -95,7 +95,7 @@ func (u UserHandler) Login(ctx context.Context, user *models.User) (string, erro
 		return "", errors.ErrPasswordIncorrect.Error()
 	}
 
-	claims, token, err := utils.TokenGenerator(foundUser.ID, foundUser.Email, foundUser.FirstName, foundUser.LastName)
+	claims, token, err := utils.TokenGenerator(foundUser.ID, foundUser.Email, foundUser.FirstName, foundUser.LastName, int32(foundUser.Role))
 	if err != nil {
 		log.GetLog().Errorf("Unable to generate tokens. error: %v", err)
 	}
@@ -277,4 +277,17 @@ func (u UserHandler) Logout(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+func (u UserHandler) ManagerAgreement(ctx context.Context, userID int32, nationalID, bankAccount string) error {
+	err := u.UserRepo.UpdateExtraInfo(ctx, userID, map[string]interface{}{
+		"national_id":  nationalID,
+		"bank_account": bankAccount,
+	})
+	if err != nil {
+		log.GetLog().Errorf("Unable to update user's extra info. error: %v", err)
+		return err
+	}
+	return nil
+
 }

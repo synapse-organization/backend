@@ -31,6 +31,7 @@ func (a AuthMiddleware) IsAuthorized(c *gin.Context) {
 
 	c.Set("userID", claims.Uid)
 	c.Set("email", claims.Email)
+	c.Set("role", claims.Role)
 	c.Set("tokenID", claims.TokenID)
 	c.Set("claims", claims)
 	c.Next()

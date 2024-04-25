@@ -6,7 +6,7 @@ import (
 	"barista/pkg/models"
 	"barista/pkg/utils"
 	"context"
-	
+
 	"fmt"
 	"net/http"
 	"time"
@@ -237,7 +237,6 @@ func (u User) ChangePassword(c *gin.Context) {
 
 }
 
-
 func (u User) Logout(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
@@ -252,6 +251,54 @@ func (u User) Logout(c *gin.Context) {
 	err := u.Handler.Logout(ctx, token[0])
 	if err != nil {
 		log.GetLog().Errorf("Unable to logout. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+
+}
+
+type RequestManagerAgreement struct {
+	NationalID  string `json:"national_id"`
+	BankAccount string `json:"bank_account"`
+}
+
+func (u User) ManagerAgreement(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var data RequestManagerAgreement
+	err := c.ShouldBindJSON(&data)
+	if err != nil {
+		log.GetLog().Errorf("Unable to bind json. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get token ID.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get token ID"})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get user role"})
+		return
+	}
+
+	if role.(int32) != 1 {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+		return
+	}
+
+	err = u.Handler.ManagerAgreement(ctx, userID.(int32), data.NationalID, data.BankAccount)
+	if err != nil {
+		log.GetLog().Errorf("Unable to manager agreement. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}

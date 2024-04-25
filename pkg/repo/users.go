@@ -4,6 +4,7 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
+	"encoding/json"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -22,6 +23,8 @@ type UsersRepo interface {
 	UpdatePassword(ctx context.Context, id int32, newPassword string) error
 	UpdateSex(ctx context.Context, id int32, newSex string) error
 	UpdatePhone(ctx context.Context, id int32, newPhone int32) error
+	UpdateRole(ctx context.Context, id int32, newRole int32) error
+	UpdateExtraInfo(ctx context.Context, id int32, newExtraInfo map[string]interface{}) error
 }
 
 type UserRepoImp struct {
@@ -40,6 +43,8 @@ func NewUserRepoImp(postgres *pgxpool.Pool) *UserRepoImp {
     			sex INT,
     			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     			is_verified BOOLEAN DEFAULT FALSE,
+    			user_role INT DEFAULT 1,
+    			extra_info JSONB,
     			UNIQUE(email))`)
 
 	if err != nil {
@@ -51,7 +56,7 @@ func NewUserRepoImp(postgres *pgxpool.Pool) *UserRepoImp {
 }
 
 func (u *UserRepoImp) Create(ctx context.Context, user *models.User) error {
-	_, err := u.postgres.Exec(ctx, "INSERT INTO users (id, first_name, last_name, email, password, phone, sex) VALUES ($1, $2, $3, $4, $5, $6, $7)", user.ID, user.FirstName, user.LastName, user.Email, user.Password, user.Phone, user.Sex)
+	_, err := u.postgres.Exec(ctx, "INSERT INTO users (id, first_name, last_name, email, password, phone, sex, user_role) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", user.ID, user.FirstName, user.LastName, user.Email, user.Password, user.Phone, user.Sex, user.Role)
 	if err != nil {
 		log.GetLog().Errorf("Unable to intser user. error: %v", err)
 	}
@@ -68,7 +73,7 @@ func (u *UserRepoImp) Verify(ctx context.Context, email string) error {
 
 func (u *UserRepoImp) GetByID(ctx context.Context, id int32) (*models.User, error) {
 	var user models.User
-	err := u.postgres.QueryRow(ctx, "SELECT id, first_name, last_name, email, password, phone, sex FROM users WHERE id = $1", id).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex)
+	err := u.postgres.QueryRow(ctx, "SELECT id, first_name, last_name, email, password, phone, sex, user_role FROM users WHERE id = $1", id).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex, &user.Role)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get user by id. error: %v", err)
 	}
@@ -77,7 +82,7 @@ func (u *UserRepoImp) GetByID(ctx context.Context, id int32) (*models.User, erro
 
 func (u *UserRepoImp) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
-	err := u.postgres.QueryRow(ctx, "SELECT id, first_name, last_name, email, password, phone, sex FROM users WHERE email = $1", email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex)
+	err := u.postgres.QueryRow(ctx, "SELECT id, first_name, last_name, email, password, phone, sex, user_role FROM users WHERE email = $1", email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex, &user.Role)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get user by id. error: %v", err)
 	}
@@ -128,6 +133,29 @@ func (u *UserRepoImp) UpdatePhone(ctx context.Context, id int32, newPhone int32)
 	_, err := u.postgres.Exec(ctx, "UPDATE users SET phone = $1 WHERE id = $2", newPhone, id)
 	if err != nil {
 		log.GetLog().Errorf("Unable to update user's phone number. error: %v", err)
+	}
+	return nil
+}
+
+func (u *UserRepoImp) UpdateRole(ctx context.Context, id int32, newRole int32) error {
+	_, err := u.postgres.Exec(ctx, "UPDATE users SET user_role = $1 WHERE id = $2", newRole, id)
+	if err != nil {
+		log.GetLog().Errorf("Unable to update user's role. error: %v", err)
+	}
+	return nil
+}
+
+func (u *UserRepoImp) UpdateExtraInfo(ctx context.Context, id int32, newExtraInfo map[string]interface{}) error {
+
+	data, err := json.Marshal(newExtraInfo)
+	if err != nil {
+		log.GetLog().Errorf("Unable to marshal extra info. error: %v", err)
+		return err
+	}
+
+	_, err = u.postgres.Exec(ctx, "UPDATE users SET extra_info = $1 WHERE id = $2", string(data), id)
+	if err != nil {
+		log.GetLog().Errorf("Unable to update user's extra info. error: %v", err)
 	}
 	return nil
 }
