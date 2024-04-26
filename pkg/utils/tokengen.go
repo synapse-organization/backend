@@ -1,10 +1,12 @@
 package utils
 
 import (
+	"barista/pkg/log"
 	"barista/pkg/repo"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"os"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	jwt "github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
@@ -49,12 +51,14 @@ func ValidateToken(postgres *pgxpool.Pool, signedToken string) (claims *SignedDe
 	})
 
 	if err != nil {
-		msg = err.Error()
+		log.GetLog().Errorf("Token is incorrect. error: %v", err)
+		msg = "Token is incorrect"
 		return
 	}
 
 	claims, ok := token.Claims.(*SignedDetails)
 	if !ok {
+		log.GetLog().Errorf("The token is invalid.")
 		msg = "The token is invalid"
 		return
 	}
