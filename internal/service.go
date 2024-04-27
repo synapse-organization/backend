@@ -82,13 +82,14 @@ func Run() {
 	user.Handle(string(models.POST), "forget-password", userHttpHandler.ForgetPassword)
 	user.Handle(string(models.POST), "change-password", authMiddleware.IsAuthorized, userHttpHandler.ChangePassword)
 	user.Handle(string(models.GET), "user-profile", authMiddleware.IsAuthorized, userHttpHandler.UserProfile)
-	user.Handle(string(models.PUT), "edit-profile", authMiddleware.IsAuthorized, userHttpHandler.EditProfile)
+	user.Handle(string(models.PATCH), "edit-profile", authMiddleware.IsAuthorized, userHttpHandler.EditProfile)
 	user.Handle(string(models.POST), "manager-agreement", authMiddleware.IsAuthorized, userHttpHandler.ManagerAgreement)
 
 	cafeRepo := repo.NewCafeRepoImp(postgres)
 	imageRepo := repo.NewImageRepoImp(postgres)
 	ratingRepo := repo.NewRatingsRepoImp(postgres)
-	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, ImageRepo: imageRepo}
+	commentRepo := repo.NewCommentsRepoImp(postgres)
+	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, CommentRepo: commentRepo, ImageRepo: imageRepo}
 	cafeHttpHandler := http.Cafe{Handler: &cafeHandler}
 
 	cafe := apiV1.Group("/cafe")
@@ -96,6 +97,8 @@ func Run() {
 	cafe.Handle(string(models.GET), "get-cafe", cafeHttpHandler.GetCafe)
 	cafe.Handle(string(models.POST), "search-cafe", cafeHttpHandler.SearchCafe)
 	cafe.Handle(string(models.GET), "public-cafe-profile", cafeHttpHandler.PublicCafeProfile)
+	cafe.Handle(string(models.POST), "add-comment", authMiddleware.IsAuthorized, cafeHttpHandler.AddComment)
+	cafe.Handle(string(models.GET), "get-comments", cafeHttpHandler.GetComments)
 
 	imageHandler := http.ImageHandler{MongoDb: mongoDb, MongoOpt: mongoDbOpt, ImageRepo: imageRepo}
 	image := apiV1.Group("/image")
