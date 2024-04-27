@@ -14,4 +14,5 @@ const (
 	POST RequestMethod = "POST"
 	GET  RequestMethod = "GET"
 	PUT RequestMethod = "PUT"
+	PATCH RequestMethod = "PATCH"
 )

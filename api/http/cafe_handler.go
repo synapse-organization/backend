@@ -5,7 +5,9 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -90,7 +92,84 @@ func (h Cafe) PublicCafeProfile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": "ok",
-		"cafe": cafe,
+		"cafe":   cafe,
 	})
+	return
+}
+
+type RequestAddComment struct {
+	CafeID  int32  `json:"cafe_id"`
+	Comment string `json:"comment"`
+}
+
+func (h Cafe) AddComment(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+	var req RequestAddComment
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().Errorf("Unable to bind json. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to bind json."})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get token ID.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get token ID"})
+		return
+	}
+
+	err = h.Handler.AddComment(ctx, req.CafeID, fmt.Sprintf("%v", userID), req.Comment)
+	if err != nil {
+		log.GetLog().Errorf("Unable to add comment. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to add comment."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
+
+func (h Cafe) GetComments(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	cafeID := c.GetHeader(http.CanonicalHeaderKey("X-Cafe-ID"))
+	if cafeID == "" {
+		log.GetLog().Errorf("cafe id is empty")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cafe id is empty"})
+		return
+	}
+
+	cafe_id, err := strconv.Atoi(cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Invalid cafe id. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid cafe id"})
+	}
+
+	apiCallsCounter := c.GetHeader("X-Api-Calls-Counter")
+	if apiCallsCounter == "" {
+		log.GetLog().Errorf("API calls counter is missing")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "API calls counter is missing"})
+		return
+	}
+
+	counter, err := strconv.Atoi(apiCallsCounter)
+	if err != nil {
+		log.GetLog().Errorf("Invalid API calls counter")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid API calls counter"})
+		return
+	}
+
+	comments, err := h.Handler.GetComments(ctx, int32(cafe_id), counter)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get comments. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get comments"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"comments": comments})
 	return
 }
