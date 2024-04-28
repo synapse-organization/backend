@@ -1,9 +1,11 @@
 package modules
 
 import (
+	"barista/pkg/errors"
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"barista/pkg/repo"
+	"barista/pkg/utils"
 	"context"
 	"math/rand"
 	"strconv"
@@ -19,6 +21,7 @@ type CafeHandler struct {
 	Rating      repo.RatingsRepo
 	CommentRepo repo.CommentsRepo
 	ImageRepo   repo.ImageRepo
+	EventRepo   repo.EventRepo
 }
 
 func (c CafeHandler) Create(ctx context.Context, cafe *models.Cafe) error {
@@ -76,21 +79,21 @@ func (c CafeHandler) SearchCafe(ctx context.Context, name string, address string
 	return cafes, err
 }
 
-func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID string) (*models.Cafe, error) {
-	cafe_id, err := strconv.Atoi(cafeID)
-	if err != nil {
-		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
-		return nil, err
-	}
+// func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID string) (*models.Cafe, error) {
+// 	cafe_id, err := strconv.Atoi(cafeID)
+// 	if err != nil {
+// 		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+// 		return nil, err
+// 	}
 
-	cafe, err := c.CafeRepo.GetByID(ctx, int32(cafe_id))
-	if err != nil {
-		log.GetLog().Errorf("Cafe id does not exist. error: %v", err)
-		return nil, err
-	}
+// 	cafe, err := c.CafeRepo.GetByID(ctx, int32(cafe_id))
+// 	if err != nil {
+// 		log.GetLog().Errorf("Cafe id does not exist. error: %v", err)
+// 		return nil, err
+// 	}
 
-	return cafe, nil
-}
+// 	return cafe, nil
+// }
 
 func (c CafeHandler) AddComment(ctx context.Context, cafeID int32, userID string, comment string) error {
 	user_id, err := strconv.Atoi(userID)
@@ -125,4 +128,47 @@ func (c CafeHandler) GetComments(ctx context.Context, cafeID int32, counter int)
 	}
 
 	return comments, err
+}
+
+func (c CafeHandler) CreateEvent(ctx context.Context, cafeID int32, name string, description string, startTime time.Time, endTime time.Time, imageID string) error {
+	start_time := startTime.UTC()
+	end_time := endTime.UTC()
+
+	if !utils.CheckStartTime(start_time) {
+		return errors.ErrStartTimeInvalid.Error()
+	}
+
+	if !utils.CheckEndTime(start_time, end_time) {
+		return errors.ErrEndTimeInvalid.Error()
+	}
+
+	exists, err := c.ImageRepo.CheckExistence(ctx, imageID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to check image existence. error: %v", err)
+		return err
+	}
+
+	if !exists {
+		log.GetLog().Errorf("image doesn't exist")
+		return errors.ErrImageInvalid.Error()
+	}
+
+	eventID := rand.Int31()
+	newEvent := &models.Event{
+		ID:          eventID,
+		CafeID:      cafeID,
+		Name:        name,
+		Description: description,
+		StartTime:   start_time,
+		EndTime:     end_time,
+		ImageID:     imageID,
+	}
+	
+	err = c.EventRepo.CreateEventForCafe(ctx, newEvent)
+	if err != nil {
+		log.GetLog().Errorf("Unable to create event for cafe. error: %v", err)
+		return err
+	}
+
+	return err
 }

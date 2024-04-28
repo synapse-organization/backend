@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -72,30 +73,30 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 
 }
 
-func (h Cafe) PublicCafeProfile(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c, TimeOut)
-	defer cancel()
+// func (h Cafe) PublicCafeProfile(c *gin.Context) {
+// 	ctx, cancel := context.WithTimeout(c, TimeOut)
+// 	defer cancel()
 
-	cafeID := c.GetHeader(http.CanonicalHeaderKey("Cafe-ID"))
-	if cafeID == "" {
-		log.GetLog().Errorf("cafe id is empty")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cafe is is empty"})
-		return
-	}
+// 	cafeID := c.GetHeader(http.CanonicalHeaderKey("Cafe-ID"))
+// 	if cafeID == "" {
+// 		log.GetLog().Errorf("cafe id is empty")
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "cafe is is empty"})
+// 		return
+// 	}
 
-	cafe, err := h.Handler.PublicCafeProfile(ctx, cafeID)
-	if err != nil {
-		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
-		return
-	}
+// 	cafe, err := h.Handler.PublicCafeProfile(ctx, cafeID)
+// 	if err != nil {
+// 		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+// 		return
+// 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status": "ok",
-		"cafe":   cafe,
-	})
-	return
-}
+// 	c.JSON(http.StatusOK, gin.H{
+// 		"status": "ok",
+// 		"cafe":   cafe,
+// 	})
+// 	return
+// }
 
 type RequestAddComment struct {
 	CafeID  int32  `json:"cafe_id"`
@@ -117,7 +118,7 @@ func (h Cafe) AddComment(c *gin.Context) {
 	userID, exists := c.Get("userID")
 	if !exists {
 		log.GetLog().Errorf("Unable to get token ID.")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get token ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to get token ID"})
 		return
 	}
 
@@ -171,5 +172,37 @@ func (h Cafe) GetComments(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"comments": comments})
+	return
+}
+
+type RequestCreateEvent struct {
+	CafeID      int32     `json:"cafe_id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	StartTime   time.Time `json:"start_time"`
+	EndTime     time.Time `json:"end_time"`
+	ImageID     string    `json:"image_id"`
+}
+
+func (h Cafe) CreateEvent(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+	var req RequestCreateEvent
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().Errorf("Unable to bind json. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to bind json"})
+		return
+	}
+
+	err = h.Handler.CreateEvent(ctx, req.CafeID, req.Name, req.Description, req.StartTime, req.EndTime, req.ImageID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to create event. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to create event"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	return
 }

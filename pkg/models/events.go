@@ -7,9 +7,9 @@ type Event struct {
 	CafeID      int32     `json:"cafe_id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
-	StartTime   time.Time `json:"start_date"`
-	EndTime     time.Time `json:"end_date"`
-	Photos      []string  `json:"photos"`
+	StartTime   time.Time `json:"start_time"`
+	EndTime     time.Time `json:"end_time"`
+	ImageID     string    `json:"image_id"`
 }
 
 type EventReservation struct {
