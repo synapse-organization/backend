@@ -10,7 +10,6 @@ import (
 type ImageRepo interface {
 	Create(ctx context.Context, image *models.Image) error
 	GetByCafeID(ctx context.Context, id int32) ([]*models.Image, error)
-	CheckExistence(ctx context.Context, imageID string) (bool, error)
 }
 
 type ImageRepoImp struct {
@@ -57,17 +56,4 @@ func (r *ImageRepoImp) GetByCafeID(ctx context.Context, id int32) ([]*models.Ima
 	}
 
 	return images, err
-}
-
-func (r *ImageRepoImp) CheckExistence(ctx context.Context, imageID string) (bool, error) {
-	var exists bool
-	err := r.postgres.QueryRow(ctx, 
-		`SELECT EXISTS
-		(SELECT 1 FROM images WHERE id = $1)`,
-		imageID).Scan(&exists)
-	if err != nil {
-		log.GetLog().Errorf("Unable to check image existence. error: %v", err)
-	}
-
-	return exists, err
 }
