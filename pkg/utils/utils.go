@@ -5,14 +5,15 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 	"net/mail"
 	"strings"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func GenerateRandomPassword(length int) string {
@@ -100,4 +101,12 @@ func IsCommonError(t interface{}) bool {
 	default:
 		return true
 	}
+}
+
+func CheckStartTime(startTime time.Time) bool {
+	return startTime.After(time.Now())
+}
+
+func CheckEndTime(startTime time.Time, endTime time.Time) bool {
+	return (endTime.After(time.Now()) && endTime.After(startTime))
 }

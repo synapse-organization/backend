@@ -4,17 +4,18 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type EventRepo interface {
-	CreateEventForCafe(ctx context.Context, cafeID int32, event *models.Event) error
+	CreateEventForCafe(ctx context.Context, event *models.Event) error
 	CreateEventForUser(ctx context.Context, userID int32, eventID int32) error
 	GetEventByID(ctx context.Context, id int32) (*models.Event, error)
 	GetEventsByCafeID(ctx context.Context, cafeID int32) ([]*models.Event, error)
 	GetEventsByUserID(ctx context.Context, userID int32) ([]*models.Event, error)
 }
-
+	
 type EventRepoImp struct {
 	postgres *pgxpool.Pool
 }
@@ -24,13 +25,13 @@ func NewEventRepoImp(postgres *pgxpool.Pool) *EventRepoImp {
 		`CREATE TABLE IF NOT EXISTS events (
 				id INTEGER PRIMARY KEY,
 				cafe_id INTEGER,
-				user_id INTEGER,
 				name TEXT,
 				description TEXT,
 				start_time TIMESTAMP,
 				end_time TIMESTAMP,
+				image_id TEXT,
 				FOREIGN KEY (cafe_id) REFERENCES cafes(id),
-				FOREIGN KEY (user_id) REFERENCES users(id)
+				FOREIGN KEY (image_id) REFERENCES images(id)
 			);`)
 	if err != nil {
 		log.GetLog().WithError(err).WithField("table", "events").Fatal("Unable to create table")
@@ -50,8 +51,8 @@ func NewEventRepoImp(postgres *pgxpool.Pool) *EventRepoImp {
 	return &EventRepoImp{postgres: postgres}
 }
 
-func (e *EventRepoImp) CreateEventForCafe(ctx context.Context, cafeID int32, event *models.Event) error {
-	_, err := e.postgres.Exec(ctx, "INSERT INTO events (id, cafe_id, name, description, start_time, end_time) VALUES ($1, $2, $3, $4, $5, $6)", event.ID, cafeID, event.Name, event.Description, event.StartTime, event.EndTime)
+func (e *EventRepoImp) CreateEventForCafe(ctx context.Context, event *models.Event) error {
+	_, err := e.postgres.Exec(ctx, "INSERT INTO events (id, cafe_id, name, description, start_time, end_time, image_id) VALUES ($1, $2, $3, $4, $5, $6, $7)", event.ID, event.CafeID, event.Name, event.Description, event.StartTime, event.EndTime, event.ImageID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to insert event. error: %v", err)
 	}

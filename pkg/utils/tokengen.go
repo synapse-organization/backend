@@ -1,10 +1,12 @@
 package utils
 
 import (
+	"barista/pkg/log"
 	"barista/pkg/repo"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"os"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	jwt "github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
@@ -16,12 +18,13 @@ type SignedDetails struct {
 	Last_Name  string
 	Email      string
 	TokenID    int32 `json:"tid"`
+	Role       int32
 	jwt.StandardClaims
 }
 
 var SECRET_KEY = os.Getenv("SECRET_KEY")
 
-func TokenGenerator(uid int32, email, firstname, lastname string) (*SignedDetails, string, error) {
+func TokenGenerator(uid int32, email, firstname, lastname string, role int32) (*SignedDetails, string, error) {
 	tokenID := uuid.New().ID()
 
 	claims := &SignedDetails{
@@ -30,6 +33,7 @@ func TokenGenerator(uid int32, email, firstname, lastname string) (*SignedDetail
 		Last_Name:  lastname,
 		Email:      email,
 		TokenID:    int32(tokenID),
+		Role:       role,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(10)).Unix(),
 		},
@@ -49,12 +53,14 @@ func ValidateToken(postgres *pgxpool.Pool, signedToken string) (claims *SignedDe
 	})
 
 	if err != nil {
-		msg = err.Error()
+		log.GetLog().Errorf("Token is incorrect. error: %v", err)
+		msg = "Token is incorrect"
 		return
 	}
 
 	claims, ok := token.Claims.(*SignedDetails)
 	if !ok {
+		log.GetLog().Errorf("The token is invalid.")
 		msg = "The token is invalid"
 		return
 	}
@@ -70,6 +76,7 @@ func ValidateToken(postgres *pgxpool.Pool, signedToken string) (claims *SignedDe
 
 	if claims.ExpiresAt < time.Now().Local().Unix() {
 		msg = "Token is already expired"
+		repo.DeleteByID(postgres, claims.TokenID)
 		return
 	}
 

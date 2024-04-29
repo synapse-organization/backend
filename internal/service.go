@@ -68,31 +68,39 @@ func Run() {
 	service := StartService()
 	apiV1 := service.engine.Group("/api")
 
-	UserRepo := repo.NewUserRepoImp(postgres)
-	TokenRepo := repo.NewTokenRepoImp(postgres)
-	UserHandler := modules.UserHandler{UserRepo: UserRepo, TokenRepo: TokenRepo, Postgres: postgres}
+	userRepo := repo.NewUserRepoImp(postgres)
+	tokenRepo := repo.NewTokenRepoImp(postgres)
+	UserHandler := modules.UserHandler{UserRepo: userRepo, TokenRepo: tokenRepo, Postgres: postgres}
 	userHttpHandler := http.User{Handler: &UserHandler}
 
 	user := apiV1.Group("/user")
 	user.Handle(string(models.POST), "signup", userHttpHandler.SignUp)
 	user.Handle(string(models.POST), "login", userHttpHandler.Login)
+	user.Handle(string(models.POST), "logout", authMiddleware.IsAuthorized, userHttpHandler.Logout)
 	user.Handle(string(models.GET), "get-user", authMiddleware.IsAuthorized, userHttpHandler.GetUser)
 	user.Handle(string(models.GET), "verify-email", userHttpHandler.VerifyEmail)
 	user.Handle(string(models.POST), "forget-password", userHttpHandler.ForgetPassword)
+	user.Handle(string(models.POST), "change-password", authMiddleware.IsAuthorized, userHttpHandler.ChangePassword)
 	user.Handle(string(models.GET), "user-profile", authMiddleware.IsAuthorized, userHttpHandler.UserProfile)
-	user.Handle(string(models.PUT), "edit-profile", authMiddleware.IsAuthorized, userHttpHandler.EditProfile)
+	user.Handle(string(models.PATCH), "edit-profile", authMiddleware.IsAuthorized, userHttpHandler.EditProfile)
+	user.Handle(string(models.POST), "manager-agreement", authMiddleware.IsAuthorized, userHttpHandler.ManagerAgreement)
 
 	cafeRepo := repo.NewCafeRepoImp(postgres)
 	imageRepo := repo.NewImageRepoImp(postgres)
 	ratingRepo := repo.NewRatingsRepoImp(postgres)
-	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, ImageRepo: imageRepo}
+	commentRepo := repo.NewCommentsRepoImp(postgres)
+	eventRepo := repo.NewEventRepoImp(postgres)
+	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, CommentRepo: commentRepo, ImageRepo: imageRepo, EventRepo: eventRepo, UserRepo: userRepo}
 	cafeHttpHandler := http.Cafe{Handler: &cafeHandler}
 
 	cafe := apiV1.Group("/cafe")
 	cafe.Handle(string(models.POST), "create", cafeHttpHandler.Create)
 	cafe.Handle(string(models.GET), "get-cafe", cafeHttpHandler.GetCafe)
 	cafe.Handle(string(models.POST), "search-cafe", cafeHttpHandler.SearchCafe)
-	cafe.Handle(string(models.GET), "public-cafe-profile", cafeHttpHandler.PublicCafeProfile)
+	// cafe.Handle(string(models.GET), "public-cafe-profile", cafeHttpHandler.PublicCafeProfile)
+	cafe.Handle(string(models.POST), "add-comment", authMiddleware.IsAuthorized, cafeHttpHandler.AddComment)
+	cafe.Handle(string(models.GET), "get-comments", cafeHttpHandler.GetComments)
+	cafe.Handle(string(models.POST), "create-event", cafeHttpHandler.CreateEvent)
 
 	imageHandler := http.ImageHandler{MongoDb: mongoDb, MongoOpt: mongoDbOpt, ImageRepo: imageRepo}
 	image := apiV1.Group("/image")
