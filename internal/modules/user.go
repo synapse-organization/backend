@@ -84,30 +84,39 @@ func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
 	return nil
 }
 
-func (u UserHandler) Login(ctx context.Context, user *models.User) (string, error) {
-	foundUser, err := u.UserRepo.GetByEmail(ctx, user.Email)
+func (u UserHandler) Login(ctx context.Context, user *models.User) (map[string]string, error) {
+	foundUsers, err := u.UserRepo.GetByEmail(ctx, user.Email)
 	if err != nil {
 		log.GetLog().Errorf("Incorrect name or password. error: %v", err)
-		return "", err
+		return nil, err
+	}
+	var correctUsers []*models.User
+	for _, foundUser := range foundUsers {
+		if utils.CheckPasswordHash(user.Password, foundUser.Password) {
+			correctUsers = append(correctUsers, foundUser)
+		}
+	}
+	if len(correctUsers) == 0 {
+		return nil, errors.ErrPasswordIncorrect.Error()
 	}
 
-	if !utils.CheckPasswordHash(user.Password, foundUser.Password) {
-		return "", errors.ErrPasswordIncorrect.Error()
+	tokens := map[string]string{}
+	for _, foundUser := range correctUsers {
+		claims, token, err := utils.TokenGenerator(foundUser.ID, foundUser.Email, foundUser.FirstName, foundUser.LastName, int32(foundUser.Role))
+		if err != nil {
+			log.GetLog().Errorf("Unable to generate tokens. error: %v", err)
+		}
+
+		expiresAt := time.Unix(claims.ExpiresAt, 0)
+		err = u.TokenRepo.Create(ctx, claims.TokenID, token, foundUser.ID, expiresAt)
+		if err != nil {
+			log.GetLog().Errorf("Unable to create token. error: %v", err)
+			return nil, err
+		}
+		tokens[models.RoleToString(foundUser.Role)] = token
 	}
 
-	claims, token, err := utils.TokenGenerator(foundUser.ID, foundUser.Email, foundUser.FirstName, foundUser.LastName, int32(foundUser.Role))
-	if err != nil {
-		log.GetLog().Errorf("Unable to generate tokens. error: %v", err)
-	}
-
-	expiresAt := time.Unix(claims.ExpiresAt, 0)
-	err = u.TokenRepo.Create(ctx, claims.TokenID, token, foundUser.ID, expiresAt)
-	if err != nil {
-		log.GetLog().Errorf("Unable to create token. error: %v", err)
-		return "", err
-	}
-
-	return token, nil
+	return tokens, nil
 }
 
 func (u UserHandler) VerifyEmail(ctx context.Context, email string) error {
@@ -128,7 +137,7 @@ func (u UserHandler) VerifyEmail(ctx context.Context, email string) error {
 
 func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) error {
 	// Find the user based on email
-	foundUser, err := u.UserRepo.GetByEmail(ctx, user.Email)
+	foundUsers, err := u.UserRepo.GetByEmail(ctx, user.Email)
 	if err != nil {
 		log.GetLog().Errorf("Email does not exist. error: %v", err)
 		return err
@@ -137,22 +146,23 @@ func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) erro
 	// Generate a random password
 	newPassword := utils.GenerateRandomPassword(passwordLength)
 
-	// Update user's password with the new random password
-	hashedPassword, err := utils.HashPassword(newPassword)
-	if err != nil {
-		log.GetLog().Errorf("Unable to hash password. error: %v", err)
-		return err
-	}
-	foundUser.Password = hashedPassword
+	for _, foundUser := range foundUsers {
+		// Update user's password with the new random password
+		hashedPassword, err := utils.HashPassword(newPassword)
+		if err != nil {
+			log.GetLog().Errorf("Unable to hash password. error: %v", err)
+			return err
+		}
+		foundUser.Password = hashedPassword
 
-	// Save the updated password to the database
-	if err := u.UserRepo.UpdatePassword(ctx, foundUser.ID, foundUser.Password); err != nil {
-		log.GetLog().Errorf("Unable to update user's password. error: %v", err)
-		return err
-	}
+		// Save the updated password to the database
+		if err := u.UserRepo.UpdatePassword(ctx, foundUser.ID, foundUser.Password); err != nil {
+			log.GetLog().Errorf("Unable to update user's password. error: %v", err)
+			return err
+		}
 
-	// Send email with the new password to the user
-	emailBody := fmt.Sprintf(`Hello %s,<br><br>
+		// Send email with the new password to the user
+		emailBody := fmt.Sprintf(`Hello %s,<br><br>
 	A new password has been requested for your Barista account associated with %s.<br><br>
 
 	Here is your new password: <strong>%s</strong><br><br>
@@ -163,10 +173,11 @@ func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) erro
 
 	Yours,<br>
 	The Synapse team`, foundUser.FirstName, foundUser.Email, newPassword)
-	err = utils.SendEmail(foundUser.Email, "Barista account recovery", emailBody)
-	if err != nil {
-		log.GetLog().Errorf("Unable to send email. error: %v", err)
-		return err
+		err = utils.SendEmail(foundUser.Email, "Barista account recovery", emailBody)
+		if err != nil {
+			log.GetLog().Errorf("Unable to send email. error: %v", err)
+			return err
+		}
 	}
 
 	return nil
