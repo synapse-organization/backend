@@ -2,6 +2,7 @@ package http
 
 import (
 	"barista/internal/modules"
+	"barista/pkg/errors"
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"barista/pkg/utils"
@@ -32,7 +33,7 @@ func (u User) SignUp(c *gin.Context) {
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
 		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		c.JSON(400, gin.H{"error": "Unable to bind json"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error()})
 		return
 	}
 
@@ -40,7 +41,7 @@ func (u User) SignUp(c *gin.Context) {
 	if err != nil {
 		if !utils.IsCommonError(err) {
 			log.GetLog().Errorf("Unable to sign up. error: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to sign up"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error()})
 			return
 		}
 
@@ -59,20 +60,20 @@ func (u User) Login(c *gin.Context) {
 	var user models.User
 	err := c.ShouldBindJSON(&user)
 	if err != nil {
-		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		log.GetLog().WithError(err).Error("Unable to sign up")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error()})
 		return
 	}
 
 	tokens, err := u.Handler.Login(ctx, &user)
 	if err != nil {
-		errValue := err.Error()
 		if !utils.IsCommonError(err) {
-			log.GetLog().Errorf("Unable to login. error: %v", err)
-			errValue = "Unable to login"
+			log.GetLog().WithError(err).Error("Unable to sign up")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error()})
+			return
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errValue})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -113,7 +114,7 @@ func (u User) ForgetPassword(c *gin.Context) {
 	err := c.ShouldBindJSON(&user)
 	if err != nil {
 		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest, "message": err})
 		return
 	}
 
@@ -135,7 +136,7 @@ func (u User) UserProfile(c *gin.Context) {
 	userID, exists := c.Get("userID")
 	if !exists {
 		log.GetLog().Errorf("Unable to get token ID.")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get token ID"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
 		return
 	}
 
@@ -172,7 +173,7 @@ func (u User) EditProfile(c *gin.Context) {
 	userID, exists := c.Get("userID")
 	if !exists {
 		log.GetLog().Errorf("Unable to get token ID.")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get token ID"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
 		return
 	}
 
@@ -202,24 +203,24 @@ func (u User) ChangePassword(c *gin.Context) {
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
 		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error()})
 		return
 	}
 
 	userID, exists := c.Get("userID")
 	if !exists {
 		log.GetLog().Errorf("Unable to get token ID.")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get token ID"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
 		return
 	}
 
 	if data.Password != data.Password2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Password not match"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrPasswordNotMatch.Error()})
 		return
 	}
 
 	if !utils.CheckPasswordValidity(data.Password) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Password is not valid"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrPasswordIncorrect.Error()})
 		return
 	}
 
@@ -244,7 +245,7 @@ func (u User) Logout(c *gin.Context) {
 	token := c.Request.Header["Authorization"]
 	if len(token) == 0 || token[0] == "" {
 		log.GetLog().Error("Token is empty")
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Token is empty"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": errors.ErrDidntLogin.Error()})
 		return
 	}
 
@@ -273,26 +274,26 @@ func (u User) ManagerAgreement(c *gin.Context) {
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
 		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error()})
 		return
 	}
 
 	userID, exists := c.Get("userID")
 	if !exists {
 		log.GetLog().Errorf("Unable to get token ID.")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get token ID"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
 		return
 	}
 
 	role, exists := c.Get("role")
 	if !exists {
 		log.GetLog().Errorf("Unable to get user role.")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get user role"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
 		return
 	}
 
 	if role.(int32) != 1 {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error()})
 		return
 	}
 

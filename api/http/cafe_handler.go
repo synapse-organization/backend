@@ -2,6 +2,7 @@ package http
 
 import (
 	"barista/internal/modules"
+	"barista/pkg/errors"
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
@@ -25,14 +26,14 @@ func (h Cafe) Create(c *gin.Context) {
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		c.JSON(400, gin.H{"error": "Unable to bind json"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error()})
 		return
 	}
 
 	err = h.Handler.Create(ctx, &req)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create cafe. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to create cafe"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error()})
 		return
 	}
 
@@ -57,15 +58,15 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to bind json"})
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error()})
 		return
 	}
 
 	cafes, err := h.Handler.SearchCafe(ctx, req.Name, req.Province, req.City, req.Category)
 	if err != nil {
 		log.GetLog().Errorf("Unable to search cafe. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to search cafe"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error()})
 		return
 	}
 
@@ -110,8 +111,8 @@ func (h Cafe) AddComment(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to bind json."})
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error()})
 		return
 	}
 
