@@ -38,7 +38,7 @@ func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
 	}
 
 	if !utils.CheckPasswordValidity(user.Password) {
-		return errors.ErrPasswordInvalid.Error()
+		return errors.ErrPasswordIncorrect.Error()
 	}
 
 	if !utils.CheckNameValidity(user.FirstName) {
