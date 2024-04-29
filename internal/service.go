@@ -68,9 +68,9 @@ func Run() {
 	service := StartService()
 	apiV1 := service.engine.Group("/api")
 
-	UserRepo := repo.NewUserRepoImp(postgres)
-	TokenRepo := repo.NewTokenRepoImp(postgres)
-	UserHandler := modules.UserHandler{UserRepo: UserRepo, TokenRepo: TokenRepo, Postgres: postgres}
+	userRepo := repo.NewUserRepoImp(postgres)
+	tokenRepo := repo.NewTokenRepoImp(postgres)
+	UserHandler := modules.UserHandler{UserRepo: userRepo, TokenRepo: tokenRepo, Postgres: postgres}
 	userHttpHandler := http.User{Handler: &UserHandler}
 
 	user := apiV1.Group("/user")
@@ -90,7 +90,7 @@ func Run() {
 	ratingRepo := repo.NewRatingsRepoImp(postgres)
 	commentRepo := repo.NewCommentsRepoImp(postgres)
 	eventRepo := repo.NewEventRepoImp(postgres)
-	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, CommentRepo: commentRepo, ImageRepo: imageRepo, EventRepo: eventRepo}
+	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, CommentRepo: commentRepo, ImageRepo: imageRepo, EventRepo: eventRepo, UserRepo: userRepo}
 	cafeHttpHandler := http.Cafe{Handler: &cafeHandler}
 
 	cafe := apiV1.Group("/cafe")
@@ -100,7 +100,7 @@ func Run() {
 	// cafe.Handle(string(models.GET), "public-cafe-profile", cafeHttpHandler.PublicCafeProfile)
 	cafe.Handle(string(models.POST), "add-comment", authMiddleware.IsAuthorized, cafeHttpHandler.AddComment)
 	cafe.Handle(string(models.GET), "get-comments", cafeHttpHandler.GetComments)
-	cafe.Handle(string(models.POST), "create_event", cafeHttpHandler.CreateEvent)
+	cafe.Handle(string(models.POST), "create-event", cafeHttpHandler.CreateEvent)
 
 	imageHandler := http.ImageHandler{MongoDb: mongoDb, MongoOpt: mongoDbOpt, ImageRepo: imageRepo}
 	image := apiV1.Group("/image")

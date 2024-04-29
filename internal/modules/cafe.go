@@ -22,6 +22,7 @@ type CafeHandler struct {
 	CommentRepo repo.CommentsRepo
 	ImageRepo   repo.ImageRepo
 	EventRepo   repo.EventRepo
+	UserRepo	repo.UsersRepo
 }
 
 func (c CafeHandler) Create(ctx context.Context, cafe *models.Cafe) error {
@@ -119,7 +120,13 @@ func (c CafeHandler) AddComment(ctx context.Context, cafeID int32, userID string
 	return err
 }
 
-func (c CafeHandler) GetComments(ctx context.Context, cafeID int32, counter int) ([]*models.Comment, error) {
+type CommentWithUserName struct {
+	*models.Comment
+	UserFirstName string `json:"user_first_name"`
+	UserLastName	string `json:"user_last_name"`
+}
+
+func (c CafeHandler) GetComments(ctx context.Context, cafeID int32, counter int) ([]CommentWithUserName, error) {
 	offset := (counter - 1) * commentsLimit
 	comments, err := c.CommentRepo.GetLast(ctx, cafeID, commentsLimit, offset)
 	if err != nil {
@@ -127,7 +134,25 @@ func (c CafeHandler) GetComments(ctx context.Context, cafeID int32, counter int)
 		return nil, err
 	}
 
-	return comments, err
+    var commentsWithNames []CommentWithUserName
+
+    for _, comment := range comments {
+        userName, err := c.UserRepo.GetByID(ctx, comment.UserID)
+        if err != nil {
+            log.GetLog().Errorf("Unable to get user name for user ID %d: %v", comment.UserID, err)
+            return nil, err
+        }
+
+        commentWithUserName := CommentWithUserName{
+            Comment:  comment,
+            UserFirstName: userName.FirstName,
+			UserLastName: userName.LastName,
+        }
+
+        commentsWithNames = append(commentsWithNames, commentWithUserName)
+    }
+
+	return commentsWithNames, err
 }
 
 func (c CafeHandler) CreateEvent(ctx context.Context, cafeID int32, name string, description string, startTime time.Time, endTime time.Time, imageID string) error {
