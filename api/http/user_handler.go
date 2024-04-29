@@ -64,7 +64,7 @@ func (u User) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := u.Handler.Login(ctx, &user)
+	tokens, err := u.Handler.Login(ctx, &user)
 	if err != nil {
 		errValue := err.Error()
 		if !utils.IsCommonError(err) {
@@ -78,7 +78,7 @@ func (u User) Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": "ok",
-		"token":  token,
+		"token":  tokens,
 	})
 	return
 }

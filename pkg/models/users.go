@@ -18,6 +18,19 @@ const (
 	AdminRole
 )
 
+func RoleToString(role Role) string {
+	switch role {
+	case UserRole:
+		return "user"
+	case ManagerRole:
+		return "manager"
+	case AdminRole:
+		return "admin"
+	default:
+		return "unknown"
+	}
+}
+
 type User struct {
 	ID        int32  `json:"id,omitempty"`
 	FirstName string `json:"first_name,omitempty"`

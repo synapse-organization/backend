@@ -16,7 +16,7 @@ type UsersRepo interface {
 	Create(ctx context.Context, user *models.User) error
 	Verify(ctx context.Context, email string) error
 	GetByID(ctx context.Context, id int32) (*models.User, error)
-	GetByEmail(ctx context.Context, email string) (*models.User, error)
+	GetByEmail(ctx context.Context, email string) ([]*models.User, error)
 	DeleteByID(ctx context.Context, id int32) error
 	UpdateFirstName(ctx context.Context, id int32, newFirstName string) error
 	UpdateLastName(ctx context.Context, id int32, newLastName string) error
@@ -45,7 +45,7 @@ func NewUserRepoImp(postgres *pgxpool.Pool) *UserRepoImp {
     			is_verified BOOLEAN DEFAULT FALSE,
     			user_role INT DEFAULT 1,
     			extra_info JSONB,
-    			UNIQUE(email))`)
+    			UNIQUE(email, user_role))`)
 
 	if err != nil {
 		log.GetLog().WithError(err).WithField("table", "users").Fatal("Unable to create table")
@@ -80,13 +80,24 @@ func (u *UserRepoImp) GetByID(ctx context.Context, id int32) (*models.User, erro
 	return &user, err
 }
 
-func (u *UserRepoImp) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-	var user models.User
-	err := u.postgres.QueryRow(ctx, "SELECT id, first_name, last_name, email, password, phone, sex, user_role FROM users WHERE email = $1", email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex, &user.Role)
+func (u *UserRepoImp) GetByEmail(ctx context.Context, email string) ([]*models.User, error) {
+	var users []*models.User
+	rows, err := u.postgres.Query(ctx, "SELECT id, first_name, last_name, email, password, phone, sex, user_role FROM users WHERE email = $1", email)
 	if err != nil {
-		log.GetLog().Errorf("Unable to get user by id. error: %v", err)
+		log.GetLog().Errorf("Unable to get user by email. error: %v", err)
+		return nil, err
 	}
-	return &user, err
+	defer rows.Close()
+	for rows.Next() {
+		var user models.User
+		err = rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex, &user.Role)
+		if err != nil {
+			log.GetLog().Errorf("Unable to scan user. error: %v", err)
+			return nil, err
+		}
+		users = append(users, &user)
+	}
+	return users, nil
 }
 
 func (u *UserRepoImp) DeleteByID(ctx context.Context, id int32) error {
