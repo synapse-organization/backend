@@ -73,30 +73,30 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 
 }
 
-// func (h Cafe) PublicCafeProfile(c *gin.Context) {
-// 	ctx, cancel := context.WithTimeout(c, TimeOut)
-// 	defer cancel()
+func (h Cafe) PublicCafeProfile(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
 
-// 	cafeID := c.GetHeader(http.CanonicalHeaderKey("Cafe-ID"))
-// 	if cafeID == "" {
-// 		log.GetLog().Errorf("cafe id is empty")
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "cafe is is empty"})
-// 		return
-// 	}
+	cafeID := c.GetHeader(http.CanonicalHeaderKey("Cafe-ID"))
+	if cafeID == "" {
+		log.GetLog().Errorf("cafe id is empty")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cafe is is empty"})
+		return
+	}
 
-// 	cafe, err := h.Handler.PublicCafeProfile(ctx, cafeID)
-// 	if err != nil {
-// 		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
-// 		return
-// 	}
+	cafe, err := h.Handler.PublicCafeProfile(ctx, cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
 
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"status": "ok",
-// 		"cafe":   cafe,
-// 	})
-// 	return
-// }
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+		"cafe":   cafe,
+	})
+	return
+}
 
 type RequestAddComment struct {
 	CafeID  int32  `json:"cafe_id"`
