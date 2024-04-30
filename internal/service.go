@@ -90,14 +90,15 @@ func Run() {
 	ratingRepo := repo.NewRatingsRepoImp(postgres)
 	commentRepo := repo.NewCommentsRepoImp(postgres)
 	eventRepo := repo.NewEventRepoImp(postgres)
-	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, CommentRepo: commentRepo, ImageRepo: imageRepo, EventRepo: eventRepo, UserRepo: userRepo}
+	reservationRepo := repo.NewReservationRepoImp(postgres)
+	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, CommentRepo: commentRepo, ImageRepo: imageRepo, EventRepo: eventRepo, UserRepo: userRepo, ReservationRepo: reservationRepo}
 	cafeHttpHandler := http.Cafe{Handler: &cafeHandler}
 
 	cafe := apiV1.Group("/cafe")
 	cafe.Handle(string(models.POST), "create", cafeHttpHandler.Create)
 	cafe.Handle(string(models.GET), "get-cafe", cafeHttpHandler.GetCafe)
 	cafe.Handle(string(models.POST), "search-cafe", cafeHttpHandler.SearchCafe)
-	// cafe.Handle(string(models.GET), "public-cafe-profile", cafeHttpHandler.PublicCafeProfile)
+	cafe.Handle(string(models.GET), "public-cafe-profile", cafeHttpHandler.PublicCafeProfile)
 	cafe.Handle(string(models.POST), "add-comment", authMiddleware.IsAuthorized, cafeHttpHandler.AddComment)
 	cafe.Handle(string(models.GET), "get-comments", cafeHttpHandler.GetComments)
 	cafe.Handle(string(models.POST), "create-event", cafeHttpHandler.CreateEvent)
