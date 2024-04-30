@@ -17,13 +17,12 @@ const (
 )
 
 type CafeHandler struct {
-	CafeRepo        repo.CafesRepo
-	Rating          repo.RatingsRepo
-	CommentRepo     repo.CommentsRepo
-	ImageRepo       repo.ImageRepo
-	EventRepo       repo.EventRepo
-	UserRepo        repo.UsersRepo
-	ReservationRepo repo.ReservationRepo
+	CafeRepo    repo.CafesRepo
+	Rating      repo.RatingsRepo
+	CommentRepo repo.CommentsRepo
+	ImageRepo   repo.ImageRepo
+	EventRepo   repo.EventRepo
+	UserRepo	repo.UsersRepo
 }
 
 func (c CafeHandler) Create(ctx context.Context, cafe *models.Cafe) error {
@@ -81,99 +80,21 @@ func (c CafeHandler) SearchCafe(ctx context.Context, name string, address string
 	return cafes, err
 }
 
-type PublicCafeProvinceCity struct {
-	ID           int32                 `json:"id"`
-	OwnerID      int32                 `json:"owner_id"`
-	Name         string                `json:"name"`
-	Description  string                `json:"description"`
-	OpeningTime  int8                  `json:"opening_time"`
-	ClosingTime  int8                  `json:"closing_time"`
-	Comments     []models.Comment      `json:"comments"`
-	Rating       float64               `json:"rating"`
-	Images       []string              `json:"photos"`
-	Events       []models.Event        `json:"events"`
-	Capacity     int32                 `json:"capacity"`
-	ContactInfo  models.ContactInfo    `json:"contact_info"`
-	Categories   []models.CafeCategory `json:"categories"`
-	ProvinceName string                `json:"province_name"`
-	CityName     string                `json:"city_name"`
-}
+// func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID string) (*models.Cafe, error) {
+// 	cafe_id, err := strconv.Atoi(cafeID)
+// 	if err != nil {
+// 		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+// 		return nil, err
+// 	}
 
-func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID string) (*PublicCafeProvinceCity, error) {
-	cafe_id, err := strconv.Atoi(cafeID)
-	if err != nil {
-		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
-		return nil, err
-	}
+// 	cafe, err := c.CafeRepo.GetByID(ctx, int32(cafe_id))
+// 	if err != nil {
+// 		log.GetLog().Errorf("Cafe id does not exist. error: %v", err)
+// 		return nil, err
+// 	}
 
-	cafe, err := c.CafeRepo.GetByID(ctx, int32(cafe_id))
-	if err != nil {
-		log.GetLog().Errorf("Cafe id does not exist. error: %v", err)
-		return nil, err
-	}
-
-	comments, err := c.CommentRepo.GetLast(ctx, int32(cafe_id), commentsLimit, 0)
-	if err != nil {
-		log.GetLog().Errorf("Unable to get last %v comments. error: %v", commentsLimit, err)
-		return nil, err
-	}
-
-	cafe.Comments = make([]models.Comment, len(comments))
-	for i, comment := range comments {
-		cafe.Comments[i] = *comment
-	}
-
-	events, err := c.EventRepo.GetEventsByCafeID(ctx, int32(cafe_id))
-	if err != nil {
-		log.GetLog().Errorf("Unable to get events by cafe id. error: %v", err)
-		return nil, err
-	}
-
-	cafe.Events = make([]models.Event, len(events))
-	for i, event := range events {
-		cafe.Events[i] = *event
-	}
-
-	cafe.Rating, err = c.Rating.GetCafesRating(ctx, int32(cafe_id))
-	if err != nil {
-		log.GetLog().Errorf("Unable to get rating by cafe id. error: %v", err)
-		return nil, err
-	}
-
-	photos, err := c.ImageRepo.GetByCafeID(ctx, int32(cafe_id))
-	if err != nil {
-		log.GetLog().Errorf("Unable to get photos by cafe id. error: %v", err)
-		return nil, err
-	}
-
-	cafe.Images = make([]string, len(photos))
-	for i, photo := range photos {
-		cafe.Images[i] = photo.ID
-	}
-
-	provinceNum := cafe.ContactInfo.Province
-	cityNum := cafe.ContactInfo.City
-
-	publicCafe := PublicCafeProvinceCity{
-		ID:           cafe.ID,
-		OwnerID:      cafe.OwnerID,
-		Name:         cafe.Name,
-		Description:  cafe.Description,
-		OpeningTime:  cafe.OpeningTime,
-		ClosingTime:  cafe.ClosingTime,
-		Comments:     cafe.Comments,
-		Rating:       cafe.Rating,
-		Images:       cafe.Images,
-		Events:       cafe.Events,
-		Capacity:     cafe.Capacity,
-		ContactInfo:  cafe.ContactInfo,
-		Categories:   cafe.Categories,
-		ProvinceName: models.Provinces[provinceNum].Name,
-		CityName:     models.Cities[provinceNum][cityNum].Name,
-	}
-
-	return &publicCafe, nil
-}
+// 	return cafe, nil
+// }
 
 func (c CafeHandler) AddComment(ctx context.Context, cafeID int32, userID string, comment string) error {
 	user_id, err := strconv.Atoi(userID)
@@ -202,7 +123,7 @@ func (c CafeHandler) AddComment(ctx context.Context, cafeID int32, userID string
 type CommentWithUserName struct {
 	*models.Comment
 	UserFirstName string `json:"user_first_name"`
-	UserLastName  string `json:"user_last_name"`
+	UserLastName	string `json:"user_last_name"`
 }
 
 func (c CafeHandler) GetComments(ctx context.Context, cafeID int32, counter int) ([]CommentWithUserName, error) {
@@ -213,23 +134,23 @@ func (c CafeHandler) GetComments(ctx context.Context, cafeID int32, counter int)
 		return nil, err
 	}
 
-	var commentsWithNames []CommentWithUserName
+    var commentsWithNames []CommentWithUserName
 
-	for _, comment := range comments {
-		userName, err := c.UserRepo.GetByID(ctx, comment.UserID)
-		if err != nil {
-			log.GetLog().Errorf("Unable to get user name for user ID %d: %v", comment.UserID, err)
-			return nil, err
-		}
+    for _, comment := range comments {
+        userName, err := c.UserRepo.GetByID(ctx, comment.UserID)
+        if err != nil {
+            log.GetLog().Errorf("Unable to get user name for user ID %d: %v", comment.UserID, err)
+            return nil, err
+        }
 
-		commentWithUserName := CommentWithUserName{
-			Comment:       comment,
-			UserFirstName: userName.FirstName,
-			UserLastName:  userName.LastName,
-		}
+        commentWithUserName := CommentWithUserName{
+            Comment:  comment,
+            UserFirstName: userName.FirstName,
+			UserLastName: userName.LastName,
+        }
 
-		commentsWithNames = append(commentsWithNames, commentWithUserName)
-	}
+        commentsWithNames = append(commentsWithNames, commentWithUserName)
+    }
 
 	return commentsWithNames, err
 }
@@ -267,7 +188,7 @@ func (c CafeHandler) CreateEvent(ctx context.Context, cafeID int32, name string,
 		EndTime:     end_time,
 		ImageID:     imageID,
 	}
-
+	
 	err = c.EventRepo.CreateEventForCafe(ctx, newEvent)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create event for cafe. error: %v", err)
