@@ -181,7 +181,7 @@ func (u User) EditProfile(c *gin.Context) {
 	if !exists {
 		log.GetLog().Errorf("Unable to get user role.")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
-		return
+
 	}
 
 	if role.(int32) != 2 {
