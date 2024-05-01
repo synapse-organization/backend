@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -74,18 +73,24 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 
 }
 
+type RequestPublicCafe struct {
+	CafeID int32 `json:"cafe_id"`
+}
+
 func (h Cafe) PublicCafeProfile(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
+	
+	var req RequestPublicCafe
 
-	cafeID := c.GetHeader(http.CanonicalHeaderKey("Cafe-ID"))
-	if cafeID == "" {
-		log.GetLog().Errorf("cafe id is empty")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cafe is is empty"})
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error()})
 		return
 	}
 
-	cafe, err := h.Handler.PublicCafeProfile(ctx, cafeID)
+	cafe, err := h.Handler.PublicCafeProfile(ctx, req.CafeID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
@@ -134,38 +139,25 @@ func (h Cafe) AddComment(c *gin.Context) {
 	return
 }
 
+type RequestGetComments struct {
+	CafeID  int32 `json:"cafe_id"`
+	Counter int   `json:"counter"`
+}
+
 func (h Cafe) GetComments(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
-	cafeID := c.GetHeader(http.CanonicalHeaderKey("X-Cafe-ID"))
-	if cafeID == "" {
-		log.GetLog().Errorf("cafe id is empty")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cafe id is empty"})
-		return
-	}
+	var req RequestGetComments
 
-	cafe_id, err := strconv.Atoi(cafeID)
+	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		log.GetLog().Errorf("Invalid cafe id. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid cafe id"})
-	}
-
-	apiCallsCounter := c.GetHeader("X-Api-Calls-Counter")
-	if apiCallsCounter == "" {
-		log.GetLog().Errorf("API calls counter is missing")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "API calls counter is missing"})
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error()})
 		return
 	}
 
-	counter, err := strconv.Atoi(apiCallsCounter)
-	if err != nil {
-		log.GetLog().Errorf("Invalid API calls counter")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid API calls counter"})
-		return
-	}
-
-	comments, err := h.Handler.GetComments(ctx, int32(cafe_id), counter)
+	comments, err := h.Handler.GetComments(ctx, req.CafeID, req.Counter)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get comments. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get comments"})
