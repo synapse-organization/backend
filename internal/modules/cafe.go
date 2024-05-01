@@ -99,20 +99,14 @@ type PublicCafeProvinceCity struct {
 	CityName     string                `json:"city_name"`
 }
 
-func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID string) (*PublicCafeProvinceCity, error) {
-	cafe_id, err := strconv.Atoi(cafeID)
-	if err != nil {
-		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
-		return nil, err
-	}
-
-	cafe, err := c.CafeRepo.GetByID(ctx, int32(cafe_id))
+func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID int32) (*PublicCafeProvinceCity, error) {
+	cafe, err := c.CafeRepo.GetByID(ctx, int32(cafeID))
 	if err != nil {
 		log.GetLog().Errorf("Cafe id does not exist. error: %v", err)
 		return nil, err
 	}
 
-	comments, err := c.CommentRepo.GetLast(ctx, int32(cafe_id), commentsLimit, 0)
+	comments, err := c.CommentRepo.GetLast(ctx, int32(cafeID), commentsLimit, 0)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get last %v comments. error: %v", commentsLimit, err)
 		return nil, err
@@ -123,7 +117,7 @@ func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID string) (*Pub
 		cafe.Comments[i] = *comment
 	}
 
-	events, err := c.EventRepo.GetEventsByCafeID(ctx, int32(cafe_id))
+	events, err := c.EventRepo.GetEventsByCafeID(ctx, int32(cafeID))
 	if err != nil {
 		log.GetLog().Errorf("Unable to get events by cafe id. error: %v", err)
 		return nil, err
@@ -134,13 +128,13 @@ func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID string) (*Pub
 		cafe.Events[i] = *event
 	}
 
-	cafe.Rating, err = c.Rating.GetCafesRating(ctx, int32(cafe_id))
+	cafe.Rating, err = c.Rating.GetCafesRating(ctx, int32(cafeID))
 	if err != nil {
 		log.GetLog().Errorf("Unable to get rating by cafe id. error: %v", err)
 		return nil, err
 	}
 
-	photos, err := c.ImageRepo.GetByCafeID(ctx, int32(cafe_id))
+	photos, err := c.ImageRepo.GetByCafeID(ctx, int32(cafeID))
 	if err != nil {
 		log.GetLog().Errorf("Unable to get photos by cafe id. error: %v", err)
 		return nil, err
