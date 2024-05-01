@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -73,24 +74,19 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 
 }
 
-type RequestPublicCafe struct {
-	CafeID int32 `json:"cafe_id"`
-}
-
 func (h Cafe) PublicCafeProfile(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
-	var req RequestPublicCafe
-
-	err := c.ShouldBindJSON(&req)
+	cafeID := c.Query("cafe_id")
+	cafe_id, err := strconv.Atoi(cafeID)
 	if err != nil {
-		log.GetLog().WithError(err).Error("Unable to bind json")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error()})
+		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid cafe_id query param"})
 		return
 	}
 
-	cafe, err := h.Handler.PublicCafeProfile(ctx, req.CafeID)
+	cafe, err := h.Handler.PublicCafeProfile(ctx, int32(cafe_id))
 	if err != nil {
 		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
@@ -148,16 +144,24 @@ func (h Cafe) GetComments(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
-	var req RequestGetComments
+	CafeID := c.Query("cafe_id")
+	Counter := c.Query("counter")
 
-	err := c.ShouldBindJSON(&req)
+	cafe_id, err := strconv.Atoi(CafeID)
 	if err != nil {
-		log.GetLog().WithError(err).Error("Unable to bind json")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error()})
+		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid cafe_id query param"})
 		return
 	}
 
-	comments, err := h.Handler.GetComments(ctx, req.CafeID, req.Counter)
+	counter, err := strconv.Atoi(Counter)
+	if err != nil {
+		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid counter query param"})
+		return
+	}
+
+	comments, err := h.Handler.GetComments(ctx, int32(cafe_id), counter)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get comments. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get comments"})
