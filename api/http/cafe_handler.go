@@ -89,7 +89,7 @@ func (h Cafe) PublicCafeProfile(c *gin.Context) {
 	cafe, err := h.Handler.PublicCafeProfile(ctx, int32(cafe_id))
 	if err != nil {
 		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -127,7 +127,7 @@ func (h Cafe) AddComment(c *gin.Context) {
 	AddedComment, err := h.Handler.AddComment(ctx, req.CafeID, fmt.Sprintf("%v", userID), req.Comment)
 	if err != nil {
 		log.GetLog().Errorf("Unable to add comment. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to add comment."})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -164,7 +164,7 @@ func (h Cafe) GetComments(c *gin.Context) {
 	comments, err := h.Handler.GetComments(ctx, int32(cafe_id), counter)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get comments. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get comments"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -193,10 +193,22 @@ func (h Cafe) CreateEvent(c *gin.Context) {
 		return
 	}
 
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error()})
+		return
+	}
+
 	err = h.Handler.CreateEvent(ctx, req.CafeID, req.Name, req.Description, req.StartTime, req.EndTime, req.ImageID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create event. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to create event"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -213,6 +225,18 @@ func (h Cafe) AddMenuItem(c *gin.Context) {
 	if err != nil {
 		log.GetLog().WithError(err).Error("Unable to bind json")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error()})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error()})
 		return
 	}
 
