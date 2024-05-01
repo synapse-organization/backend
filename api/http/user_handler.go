@@ -177,6 +177,18 @@ func (u User) EditProfile(c *gin.Context) {
 		return
 	}
 
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		newDetail.NationalID = ""
+		newDetail.BankAccount = ""
+	}
+
 	err = u.Handler.EditProfile(ctx, &newDetail, fmt.Sprintf("%v", userID))
 	if err != nil {
 		log.GetLog().Errorf("Unable to edit profile. error: %v", err)
