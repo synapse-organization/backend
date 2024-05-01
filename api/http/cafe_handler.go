@@ -123,14 +123,14 @@ func (h Cafe) AddComment(c *gin.Context) {
 		return
 	}
 
-	err = h.Handler.AddComment(ctx, req.CafeID, fmt.Sprintf("%v", userID), req.Comment)
+	AddedComment, err := h.Handler.AddComment(ctx, req.CafeID, fmt.Sprintf("%v", userID), req.Comment)
 	if err != nil {
 		log.GetLog().Errorf("Unable to add comment. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to add comment."})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	c.JSON(http.StatusOK, gin.H{"comment": AddedComment})
 	return
 }
 

@@ -96,28 +96,42 @@ func (c CafeHandler) SearchCafe(ctx context.Context, name string, address string
 // 	return cafe, nil
 // }
 
-func (c CafeHandler) AddComment(ctx context.Context, cafeID int32, userID string, comment string) error {
+func (c CafeHandler) AddComment(ctx context.Context, cafeID int32, userID string, comment string) (CommentWithUserName, error) {
+	CWU := CommentWithUserName{}
+
 	user_id, err := strconv.Atoi(userID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to convert user id to int32. error: %v", err)
-		return err
+		return CWU, err
 	}
 
 	commentID := rand.Int31()
 
-	err = c.CommentRepo.Create(ctx, &models.Comment{
+	AddedComment := &models.Comment{
 		ID:      commentID,
 		UserID:  int32(user_id),
 		CafeID:  cafeID,
 		Comment: comment,
-		Date:    time.Now(),
-	})
-	if err != nil {
-		log.GetLog().Errorf("Unable to add comment. error: %v", err)
-		return err
+		Date:    time.Now().UTC(),
 	}
 
-	return err
+	err = c.CommentRepo.Create(ctx, AddedComment)
+	if err != nil {
+		log.GetLog().Errorf("Unable to add comment. error: %v", err)
+		return CWU, err
+	}
+
+	user, err := c.UserRepo.GetByID(ctx, int32(user_id))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get user name for user id %d: %v", user_id, err)
+		return CWU, err
+	}
+
+	CWU.Comment = AddedComment
+	CWU.UserFirstName = user.FirstName
+	CWU.UserLastName = user.LastName
+
+	return CWU, err
 }
 
 type CommentWithUserName struct {
