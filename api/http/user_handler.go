@@ -292,7 +292,7 @@ func (u User) ManagerAgreement(c *gin.Context) {
 		return
 	}
 
-	if role.(int32) != 1 {
+	if role.(int32) != 2 {
 		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error()})
 		return
 	}
