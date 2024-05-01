@@ -32,12 +32,14 @@ func RoleToString(role Role) string {
 }
 
 type User struct {
-	ID        int32  `json:"id,omitempty"`
-	FirstName string `json:"first_name,omitempty"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	Phone     int64  `json:"phone"`
-	Sex       Sex    `json:"sex"`
-	Role      Role   `json:"role"`
+	ID          int32  `json:"id,omitempty"`
+	FirstName   string `json:"first_name,omitempty"`
+	LastName    string `json:"last_name"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	Phone       int64  `json:"phone"`
+	Sex         Sex    `json:"sex"`
+	Role        Role   `json:"role"`
+	NationalID  string `json:"national_id"`
+	BankAccount string `json:"bank_account"`
 }

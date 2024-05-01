@@ -255,6 +255,17 @@ func (u UserHandler) EditProfile(ctx context.Context, newDetail *models.User, us
 		}
 	}
 
+	if newDetail.BankAccount != "" && newDetail.NationalID != "" {
+		err = u.UserRepo.UpdateExtraInfo(ctx, int32(user_id), map[string]interface{}{
+			"national_id":  newDetail.NationalID,
+			"bank_account": newDetail.BankAccount,
+		})
+		if err != nil {
+			log.GetLog().Errorf("Unable to update user's extra info. error: %v", err)
+			return err
+		}
+	}
+
 	return err
 }
 
