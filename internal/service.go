@@ -91,7 +91,8 @@ func Run() {
 	commentRepo := repo.NewCommentsRepoImp(postgres)
 	eventRepo := repo.NewEventRepoImp(postgres)
 	reservationRepo := repo.NewReservationRepoImp(postgres)
-	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, CommentRepo: commentRepo, ImageRepo: imageRepo, EventRepo: eventRepo, UserRepo: userRepo, ReservationRepo: reservationRepo}
+	menuItemRepo := repo.NewMenuItemRepoImp(postgres)
+	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, CommentRepo: commentRepo, ImageRepo: imageRepo, EventRepo: eventRepo, UserRepo: userRepo, ReservationRepo: reservationRepo, MenuItemRepo: menuItemRepo}
 	cafeHttpHandler := http.Cafe{Handler: &cafeHandler}
 
 	cafe := apiV1.Group("/cafe")
@@ -102,6 +103,7 @@ func Run() {
 	cafe.Handle(string(models.POST), "add-comment", authMiddleware.IsAuthorized, cafeHttpHandler.AddComment)
 	cafe.Handle(string(models.GET), "get-comments", cafeHttpHandler.GetComments)
 	cafe.Handle(string(models.POST), "create-event", cafeHttpHandler.CreateEvent)
+	cafe.Handle(string(models.POST), "add-menu-item", authMiddleware.IsAuthorized, cafeHttpHandler.AddMenuItem)
 
 	imageHandler := http.ImageHandler{MongoDb: mongoDb, MongoOpt: mongoDbOpt, ImageRepo: imageRepo}
 	image := apiV1.Group("/image")
