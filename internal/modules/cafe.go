@@ -7,6 +7,7 @@ import (
 	"barista/pkg/repo"
 	"barista/pkg/utils"
 	"context"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
@@ -24,6 +25,7 @@ type CafeHandler struct {
 	EventRepo       repo.EventRepo
 	UserRepo        repo.UsersRepo
 	ReservationRepo repo.ReservationRepo
+	MenuItemRepo    repo.MenuItemsRepo
 }
 
 func (c CafeHandler) Create(ctx context.Context, cafe *models.Cafe) error {
@@ -283,4 +285,48 @@ func (c CafeHandler) CreateEvent(ctx context.Context, cafeID int32, name string,
 	}
 
 	return err
+}
+
+func (c CafeHandler) AddMenuItem(ctx context.Context, menuItem *models.MenuItem) error {
+	validCategory := false
+	for _, category := range []models.MenuItemCategory{
+		models.MenuItemCategoryCoffee,
+		models.MenuItemCategoryTea,
+		models.MenuItemCategoryAppetizer,
+		models.MenuItemCategoryMainDish,
+		models.MenuItemCategoryDessert,
+		models.MenuItemCategoryDrink,
+	} {
+		if menuItem.Category == category {
+			validCategory = true
+			break
+		}
+	}
+
+	if !validCategory {
+		log.GetLog().Errorf("Category is invalid")
+		return fmt.Errorf("invalid menu item category: %s", menuItem.Category)
+	}
+
+	if menuItem.ImageID != "" {
+		imageExists, err := c.ImageRepo.CheckExistence(ctx, menuItem.ImageID)
+		if err != nil {
+			log.GetLog().Errorf("invalid image id. error: %v", err)
+			return err
+		}
+
+		if !imageExists {
+			return fmt.Errorf("image doesn't exist")
+		}
+	}
+
+	menuItem.ID = rand.Int31()
+
+	err := c.MenuItemRepo.Create(ctx, menuItem)
+	if err != nil {
+		log.GetLog().Errorf("Unable to create menu item. error: %v", err)
+		return err
+	}
+
+	return nil
 }

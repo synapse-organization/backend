@@ -80,7 +80,7 @@ type RequestPublicCafe struct {
 func (h Cafe) PublicCafeProfile(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
-	
+
 	var req RequestPublicCafe
 
 	err := c.ShouldBindJSON(&req)
@@ -193,6 +193,29 @@ func (h Cafe) CreateEvent(c *gin.Context) {
 	if err != nil {
 		log.GetLog().Errorf("Unable to create event. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to create event"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
+
+func (h Cafe) AddMenuItem(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+	var req models.MenuItem
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error()})
+		return
+	}
+
+	err = h.Handler.AddMenuItem(ctx, &req)
+	if err != nil {
+		log.GetLog().Errorf("Unable to add menu item. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
