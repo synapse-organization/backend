@@ -18,13 +18,6 @@ type Cafe struct {
 	Categories   []CafeCategory `json:"categories"`
 }
 
-type MenuItem struct {
-	ID       int32            `json:"id"`
-	Name     string           `json:"name"`
-	Price    float64          `json:"price"`
-	Category MenuItemCategory `json:"category"`
-}
-
 type ContactInfo struct {
 	Phone    string `json:"phone"`
 	Email    string `json:"email"`
