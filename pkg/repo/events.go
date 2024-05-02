@@ -29,9 +29,7 @@ func NewEventRepoImp(postgres *pgxpool.Pool) *EventRepoImp {
 				description TEXT,
 				start_time TIMESTAMP,
 				end_time TIMESTAMP,
-				image_id TEXT,
-				FOREIGN KEY (cafe_id) REFERENCES cafes(id),
-				FOREIGN KEY (image_id) REFERENCES images(id)
+				FOREIGN KEY (cafe_id) REFERENCES cafes(id)
 			);`)
 	if err != nil {
 		log.GetLog().WithError(err).WithField("table", "events").Fatal("Unable to create table")
@@ -52,7 +50,7 @@ func NewEventRepoImp(postgres *pgxpool.Pool) *EventRepoImp {
 }
 
 func (e *EventRepoImp) CreateEventForCafe(ctx context.Context, event *models.Event) error {
-	_, err := e.postgres.Exec(ctx, "INSERT INTO events (id, cafe_id, name, description, start_time, end_time, image_id) VALUES ($1, $2, $3, $4, $5, $6, $7)", event.ID, event.CafeID, event.Name, event.Description, event.StartTime, event.EndTime, event.ImageID)
+	_, err := e.postgres.Exec(ctx, "INSERT INTO events (id, cafe_id, name, description, start_time, end_time) VALUES ($1, $2, $3, $4, $5, $6)", event.ID, event.CafeID, event.Name, event.Description, event.StartTime, event.EndTime)
 	if err != nil {
 		log.GetLog().Errorf("Unable to insert event. error: %v", err)
 	}
