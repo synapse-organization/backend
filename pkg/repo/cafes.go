@@ -40,6 +40,7 @@ func NewCafeRepoImp(postgres *pgxpool.Pool) *CafesRepoImp {
 				city INTEGER,
 				address TEXT,
 				categories TEXT,
+				amenities TEXT,
 				FOREIGN KEY (owner_id) REFERENCES users(id)
 			);`)
 
@@ -47,9 +48,9 @@ func NewCafeRepoImp(postgres *pgxpool.Pool) *CafesRepoImp {
 		log.GetLog().WithError(err).WithField("table", "cafes").Fatal("Unable to create table")
 	}
 
-	_, err = postgres.Exec(context.Background(), `INSERT INTO cafes (id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, location, province, city, address, categories)
+	_, err = postgres.Exec(context.Background(), `INSERT INTO cafes (id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, location, province, city, address, categories, amenities)
 			VALUES 
-			(1, 12, 'Cafe One', 'A stylish cafe with a focus on specialty coffees and homemade desserts.', 8, 10, 25, '+12345678901', 'cafe_one@example.com', '123 Oak Street', 1, 2, '123 Oak Street, Los Angeles, CA', 'Coffee, Desserts');
+			(1, 12, 'Cafe One', 'A stylish cafe with a focus on specialty coffees and homemade desserts.', 8, 10, 25, '+12345678901', 'cafe_one@example.com', '112', 1, 2, '123 Oak Street, Los Angeles, CA', 'Coffee,Desserts', 'وای فای');
 	`)
 	if err != nil {
 		log.GetLog().Errorf("Unable to insert cafes. error: %v", err)
@@ -67,7 +68,16 @@ func (c *CafesRepoImp) Create(ctx context.Context, cafe *models.Cafe) (int32, er
 			categories += ","
 		}
 	}
-	_, err := c.postgres.Exec(ctx, "INSERT INTO cafes (id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)", cafe.ID, cafe.OwnerID, cafe.Name, cafe.Description, cafe.OpeningTime, cafe.ClosingTime, cafe.Capacity, cafe.ContactInfo.Phone, cafe.ContactInfo.Email, cafe.ContactInfo.Province, cafe.ContactInfo.City, cafe.ContactInfo.Address, cafe.ContactInfo.Location, categories)
+
+	amenities := ""
+	for i, amenity := range cafe.Amenities {
+		amenities += string(amenity)
+		if i != len(cafe.Amenities)-1 {
+			amenities += ","
+		}
+	}
+
+	_, err := c.postgres.Exec(ctx, "INSERT INTO cafes (id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories, amenities) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)", cafe.ID, cafe.OwnerID, cafe.Name, cafe.Description, cafe.OpeningTime, cafe.ClosingTime, cafe.Capacity, cafe.ContactInfo.Phone, cafe.ContactInfo.Email, cafe.ContactInfo.Province, cafe.ContactInfo.City, cafe.ContactInfo.Address, cafe.ContactInfo.Location, categories, amenities)
 	if err != nil {
 		log.GetLog().Errorf("Unable to insert cafe. error: %v", err)
 	}
@@ -76,16 +86,21 @@ func (c *CafesRepoImp) Create(ctx context.Context, cafe *models.Cafe) (int32, er
 
 func (c *CafesRepoImp) GetByID(ctx context.Context, id int32) (*models.Cafe, error) {
 	var cafe models.Cafe
-	catetories := ""
-	err := c.postgres.QueryRow(ctx, "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories FROM cafes WHERE id = $1", id).Scan(&cafe.ID, &cafe.OwnerID, &cafe.Name, &cafe.Description, &cafe.OpeningTime, &cafe.ClosingTime, &cafe.Capacity, &cafe.ContactInfo.Phone, &cafe.ContactInfo.Email, &cafe.ContactInfo.Province, &cafe.ContactInfo.City, &cafe.ContactInfo.Address, &cafe.ContactInfo.Location, &catetories)
-
-	for _, category := range strings.Split(catetories, ",") {
-		cafe.Categories = append(cafe.Categories, models.CafeCategory(category))
-	}
-
+	categories := ""
+	amenities := ""
+	err := c.postgres.QueryRow(ctx, "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories, amenities FROM cafes WHERE id = $1", id).Scan(&cafe.ID, &cafe.OwnerID, &cafe.Name, &cafe.Description, &cafe.OpeningTime, &cafe.ClosingTime, &cafe.Capacity, &cafe.ContactInfo.Phone, &cafe.ContactInfo.Email, &cafe.ContactInfo.Province, &cafe.ContactInfo.City, &cafe.ContactInfo.Address, &cafe.ContactInfo.Location, &categories, &amenities)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get cafe by id. error: %v", err)
 	}
+
+	for _, category := range strings.Split(categories, ",") {
+		cafe.Categories = append(cafe.Categories, models.CafeCategory(category))
+	}
+
+	for _, amenity := range strings.Split(amenities, ",") {
+		cafe.Amenities = append(cafe.Amenities, models.AmenityCategory(amenity))
+	}
+
 	return &cafe, err
 }
 
@@ -119,14 +134,21 @@ func (c *CafesRepoImp) SearchCafe(ctx context.Context, name string, province str
 
 	for rows.Next() {
 		var cafe models.Cafe
-		catetories := ""
-		err = rows.Scan(&cafe.ID, &cafe.OwnerID, &cafe.Name, &cafe.Description, &cafe.OpeningTime, &cafe.ClosingTime, &cafe.Capacity, &cafe.ContactInfo.Phone, &cafe.ContactInfo.Email, &cafe.ContactInfo.Province, &cafe.ContactInfo.City, &cafe.ContactInfo.Address, &cafe.ContactInfo.Location, &catetories)
+		categories := ""
+		amenities := ""
+		err = rows.Scan(&cafe.ID, &cafe.OwnerID, &cafe.Name, &cafe.Description, &cafe.OpeningTime, &cafe.ClosingTime, &cafe.Capacity, &cafe.ContactInfo.Phone, &cafe.ContactInfo.Email, &cafe.ContactInfo.Province, &cafe.ContactInfo.City, &cafe.ContactInfo.Address, &cafe.ContactInfo.Location, &categories, &amenities)
 		if err != nil {
 			log.GetLog().Errorf("Unable to scan cafe. error: %v", err)
 		}
-		for _, category := range strings.Split(catetories, ",") {
+
+		for _, category := range strings.Split(categories, ",") {
 			cafe.Categories = append(cafe.Categories, models.CafeCategory(strings.TrimSpace(category)))
 		}
+
+		for _, amenity := range strings.Split(amenities, ",") {
+			cafe.Amenities = append(cafe.Amenities, models.AmenityCategory(strings.TrimSpace(amenity)))
+		}
+
 		cafes = append(cafes, cafe)
 	}
 
