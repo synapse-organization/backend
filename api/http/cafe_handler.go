@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -167,19 +166,10 @@ func (h Cafe) GetComments(c *gin.Context) {
 	return
 }
 
-type RequestCreateEvent struct {
-	CafeID      int32     `json:"cafe_id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	StartTime   time.Time `json:"start_time"`
-	EndTime     time.Time `json:"end_time"`
-	ImageID     string    `json:"image_id"`
-}
-
 func (h Cafe) CreateEvent(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
-	var req RequestCreateEvent
+	var req models.Event
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
@@ -200,7 +190,7 @@ func (h Cafe) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	err = h.Handler.CreateEvent(ctx, req.CafeID, req.Name, req.Description, req.StartTime, req.EndTime, req.ImageID)
+	err = h.Handler.CreateEvent(ctx, req)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create event. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

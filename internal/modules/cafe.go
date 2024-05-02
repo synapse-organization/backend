@@ -251,9 +251,9 @@ func (c CafeHandler) GetComments(ctx context.Context, cafeID int32, counter int)
 	return commentsWithNames, err
 }
 
-func (c CafeHandler) CreateEvent(ctx context.Context, cafeID int32, name string, description string, startTime time.Time, endTime time.Time, imageID string) error {
-	start_time := startTime.UTC()
-	end_time := endTime.UTC()
+func (c CafeHandler) CreateEvent(ctx context.Context, event models.Event) error {
+	start_time := event.StartTime.UTC()
+	end_time := event.EndTime.UTC()
 
 	if !utils.CheckStartTime(start_time) {
 		return errors.ErrStartTimeInvalid.Error()
@@ -263,29 +263,30 @@ func (c CafeHandler) CreateEvent(ctx context.Context, cafeID int32, name string,
 		return errors.ErrEndTimeInvalid.Error()
 	}
 
-	exists, err := c.ImageRepo.CheckExistence(ctx, imageID)
-	if err != nil {
-		log.GetLog().Errorf("Unable to check image existence. error: %v", err)
-		return err
-	}
-
-	if !exists {
-		log.GetLog().Errorf("image doesn't exist")
-		return errors.ErrImageInvalid.Error()
-	}
-
 	eventID := rand.Int31()
 	newEvent := &models.Event{
 		ID:          eventID,
-		CafeID:      cafeID,
-		Name:        name,
-		Description: description,
+		CafeID:      event.CafeID,
+		Name:        event.Name,
+		Description: event.Description,
 		StartTime:   start_time,
 		EndTime:     end_time,
-		ImageID:     imageID,
+		ImageID:     event.ImageID,
 	}
 
-	err = c.EventRepo.CreateEventForCafe(ctx, newEvent)
+	if event.ImageID != "" {
+		err := c.ImageRepo.Create(ctx, &models.Image{
+			ID: event.ImageID,
+			CafeID: event.CafeID,
+		})
+
+		if err != nil {
+			log.GetLog().Errorf("Unable to create image. error: %v", err)
+			return err
+		}
+	}
+
+	err := c.EventRepo.CreateEventForCafe(ctx, newEvent)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create event for cafe. error: %v", err)
 		return err
