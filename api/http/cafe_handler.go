@@ -134,37 +134,37 @@ func (h Cafe) AddComment(c *gin.Context) {
 	return
 }
 
-func (h Cafe) GetComments(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c, TimeOut)
-	defer cancel()
+// func (h Cafe) GetComments(c *gin.Context) {
+// 	ctx, cancel := context.WithTimeout(c, TimeOut)
+// 	defer cancel()
 
-	CafeID := c.Query("cafe_id")
-	Counter := c.Query("counter")
+// 	CafeID := c.Query("cafe_id")
+// 	Counter := c.Query("counter")
 
-	cafe_id, err := strconv.Atoi(CafeID)
-	if err != nil {
-		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid cafe_id query param"})
-		return
-	}
+// 	cafe_id, err := strconv.Atoi(CafeID)
+// 	if err != nil {
+// 		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid cafe_id query param"})
+// 		return
+// 	}
 
-	counter, err := strconv.Atoi(Counter)
-	if err != nil {
-		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid counter query param"})
-		return
-	}
+// 	counter, err := strconv.Atoi(Counter)
+// 	if err != nil {
+// 		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid counter query param"})
+// 		return
+// 	}
 
-	comments, err := h.Handler.GetComments(ctx, int32(cafe_id), counter)
-	if err != nil {
-		log.GetLog().Errorf("Unable to get comments. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+// 	comments, err := h.Handler.GetComments(ctx, int32(cafe_id), counter)
+// 	if err != nil {
+// 		log.GetLog().Errorf("Unable to get comments. error: %v", err)
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
 
-	c.JSON(http.StatusOK, gin.H{"comments": comments})
-	return
-}
+// 	c.JSON(http.StatusOK, gin.H{"comments": comments})
+// 	return
+// }
 
 func (h Cafe) CreateEvent(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)

@@ -101,7 +101,7 @@ func Run() {
 	cafe.Handle(string(models.POST), "search-cafe", cafeHttpHandler.SearchCafe)
 	cafe.Handle(string(models.GET), "public-cafe-profile", cafeHttpHandler.PublicCafeProfile)
 	cafe.Handle(string(models.POST), "add-comment", authMiddleware.IsAuthorized, cafeHttpHandler.AddComment)
-	cafe.Handle(string(models.GET), "get-comments", cafeHttpHandler.GetComments)
+	// cafe.Handle(string(models.GET), "get-comments", cafeHttpHandler.GetComments)
 	cafe.Handle(string(models.POST), "create-event", authMiddleware.IsAuthorized, cafeHttpHandler.CreateEvent)
 	cafe.Handle(string(models.POST), "add-menu-item", authMiddleware.IsAuthorized, cafeHttpHandler.AddMenuItem)
 	cafe.Handle(string(models.GET), "get-menu", cafeHttpHandler.GetMenu)

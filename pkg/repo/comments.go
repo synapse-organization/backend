@@ -12,7 +12,8 @@ type CommentsRepo interface {
 	Create(ctx context.Context, comment *models.Comment) error
 	GetByID(ctx context.Context, id int32) (*models.Comment, error)
 	GetByCafeID(ctx context.Context, cafeID int32) ([]*models.Comment, error)
-	GetLast(ctx context.Context, cafeID int32, limit int32, offset int) ([]*models.Comment, error)
+	// GetLast(ctx context.Context, cafeID int32, limit int32, offset int) ([]*models.Comment, error)
+	GetAllByCafeID(ctx context.Context, cafeID int32) ([]*models.Comment, error)
 }
 
 type CommentsRepoImp struct {
@@ -72,16 +73,40 @@ func (c *CommentsRepoImp) GetByCafeID(ctx context.Context, cafeID int32) ([]*mod
 	return comments, err
 }
 
-func (c *CommentsRepoImp) GetLast(ctx context.Context, cafeID int32, limit int32, offset int) ([]*models.Comment, error) {
+// func (c *CommentsRepoImp) GetLast(ctx context.Context, cafeID int32, limit int32, offset int) ([]*models.Comment, error) {
+// 	rows, err := c.postgres.Query(ctx,
+// 		`SELECT id, user_id, cafe_id, comment, date 
+// 		FROM comments
+// 		WHERE cafe_id = $1
+// 		ORDER BY date DESC
+// 		LIMIT $2
+// 		OFFSET $3`, cafeID, limit, offset)
+// 	if err != nil {
+// 		log.GetLog().Errorf("Unable to get last %v comments. error: %v", limit, err)
+// 	}
+// 	defer rows.Close()
+
+// 	var comments []*models.Comment
+// 	for rows.Next() {
+// 		var comment models.Comment
+// 		err := rows.Scan(&comment.ID, &comment.UserID, &comment.CafeID, &comment.Comment, &comment.Date)
+// 		if err != nil {
+// 			log.GetLog().Errorf("Unable to scan comments. error: %v", err)
+// 		}
+// 		comments = append(comments, &comment)
+// 	}
+
+// 	return comments, err
+// }
+
+func (c *CommentsRepoImp) GetAllByCafeID(ctx context.Context, cafeID int32) ([]*models.Comment, error) {
 	rows, err := c.postgres.Query(ctx,
 		`SELECT id, user_id, cafe_id, comment, date 
 		FROM comments
 		WHERE cafe_id = $1
-		ORDER BY date DESC
-		LIMIT $2
-		OFFSET $3`, cafeID, limit, offset)
+		ORDER BY date DESC`, cafeID)
 	if err != nil {
-		log.GetLog().Errorf("Unable to get last %v comments. error: %v", limit, err)
+		log.GetLog().Errorf("Unable to get all comments. error: %v", err)
 	}
 	defer rows.Close()
 
