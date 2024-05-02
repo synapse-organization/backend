@@ -135,11 +135,6 @@ func (h Cafe) AddComment(c *gin.Context) {
 	return
 }
 
-type RequestGetComments struct {
-	CafeID  int32 `json:"cafe_id"`
-	Counter int   `json:"counter"`
-}
-
 func (h Cafe) GetComments(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
@@ -240,13 +235,42 @@ func (h Cafe) AddMenuItem(c *gin.Context) {
 		return
 	}
 
-	err = h.Handler.AddMenuItem(ctx, &req)
+	item, err := h.Handler.AddMenuItem(ctx, &req)
 	if err != nil {
 		log.GetLog().Errorf("Unable to add menu item. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	c.JSON(http.StatusOK, gin.H{
+		"item": item,
+	})
+	return
+}
+
+func (h Cafe) GetMenu(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	CafeID := c.Query("cafe_id")
+
+	cafe_id, err := strconv.Atoi(CafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	categories, menu, err := h.Handler.GetMenu(ctx, int32(cafe_id))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get menu. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"categories": categories,
+		"menu":       menu,
+	})
 	return
 }

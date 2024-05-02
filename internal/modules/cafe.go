@@ -287,7 +287,7 @@ func (c CafeHandler) CreateEvent(ctx context.Context, cafeID int32, name string,
 	return err
 }
 
-func (c CafeHandler) AddMenuItem(ctx context.Context, menuItem *models.MenuItem) error {
+func (c CafeHandler) AddMenuItem(ctx context.Context, menuItem *models.MenuItem) (*models.MenuItem, error) {
 	validCategory := false
 	for _, category := range []models.MenuItemCategory{
 		models.MenuItemCategoryCoffee,
@@ -305,28 +305,45 @@ func (c CafeHandler) AddMenuItem(ctx context.Context, menuItem *models.MenuItem)
 
 	if !validCategory {
 		log.GetLog().Errorf("Category is invalid")
-		return fmt.Errorf("invalid menu item category: %s", menuItem.Category)
+		return nil, fmt.Errorf("invalid menu item category: %s", menuItem.Category)
 	}
 
 	if menuItem.ImageID != "" {
-		imageExists, err := c.ImageRepo.CheckExistence(ctx, menuItem.ImageID)
-		if err != nil {
-			log.GetLog().Errorf("invalid image id. error: %v", err)
-			return err
-		}
+		err := c.ImageRepo.Create(ctx, &models.Image{
+			ID:     menuItem.ImageID,
+			CafeID: menuItem.CafeID,
+		})
 
-		if !imageExists {
-			return fmt.Errorf("image doesn't exist")
+		if err != nil {
+			log.GetLog().Errorf("Unable to create image. error: %v", err)
+			return nil, err
 		}
 	}
-
-	menuItem.ID = rand.Int31()
 
 	err := c.MenuItemRepo.Create(ctx, menuItem)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create menu item. error: %v", err)
-		return err
+		return nil, err
 	}
 
-	return nil
+	return menuItem, err
+}
+
+func (c CafeHandler) GetMenu(ctx context.Context, cafeID int32) ([]string, map[string][]*models.MenuItem, error) {
+	menuItems, err := c.MenuItemRepo.GetItemsByCafeID(ctx, cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get menu items. error: %v", err)
+		return nil, nil, err
+	}
+
+	var categories []string
+	menu := make(map[string][]*models.MenuItem)
+
+	for _, item := range menuItems {
+		category := string(item.Category)
+		categories = utils.AppendIfNotExists(categories, category)
+		menu[category] = append(menu[category], item)
+	}
+
+	return categories, menu, nil
 }

@@ -110,3 +110,12 @@ func CheckStartTime(startTime time.Time) bool {
 func CheckEndTime(startTime time.Time, endTime time.Time) bool {
 	return (endTime.After(time.Now()) && endTime.After(startTime))
 }
+
+func AppendIfNotExists(slice []string, str string) []string {
+    for _, s := range slice {
+        if s == str {
+            return slice
+        }
+    }
+    return append(slice, str)
+}
