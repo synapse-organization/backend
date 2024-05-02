@@ -27,12 +27,19 @@ type CafeHandler struct {
 }
 
 func (c CafeHandler) Create(ctx context.Context, cafe *models.Cafe) error {
-	err := c.CafeRepo.Create(ctx, cafe)
+	cafeID, err := c.CafeRepo.Create(ctx, cafe)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create cafe. error: %v", err)
 		return err
 	}
-	return nil
+	for _, photoID := range cafe.Images {
+		err = c.ImageRepo.Create(ctx, &models.Image{
+			ID:     photoID,
+			CafeID: cafeID,
+		})
+	}
+
+	return err
 }
 
 func (c CafeHandler) GetCafes() {

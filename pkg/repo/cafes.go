@@ -14,7 +14,7 @@ func init() {
 }
 
 type CafesRepo interface {
-	Create(ctx context.Context, cafe *models.Cafe) error
+	Create(ctx context.Context, cafe *models.Cafe) (int32, error)
 	GetByID(ctx context.Context, id int32) (*models.Cafe, error)
 	SearchCafe(ctx context.Context, name string, address string, location string, category string) ([]models.Cafe, error)
 }
@@ -58,7 +58,7 @@ func NewCafeRepoImp(postgres *pgxpool.Pool) *CafesRepoImp {
 	return &CafesRepoImp{postgres: postgres}
 }
 
-func (c *CafesRepoImp) Create(ctx context.Context, cafe *models.Cafe) error {
+func (c *CafesRepoImp) Create(ctx context.Context, cafe *models.Cafe) (int32, error) {
 	cafe.ID = rand.Int31()
 	categories := ""
 	for i, category := range cafe.Categories {
@@ -71,7 +71,7 @@ func (c *CafesRepoImp) Create(ctx context.Context, cafe *models.Cafe) error {
 	if err != nil {
 		log.GetLog().Errorf("Unable to insert cafe. error: %v", err)
 	}
-	return err
+	return cafe.ID, err
 }
 
 func (c *CafesRepoImp) GetByID(ctx context.Context, id int32) (*models.Cafe, error) {
