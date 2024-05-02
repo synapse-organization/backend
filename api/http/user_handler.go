@@ -98,7 +98,7 @@ func (u User) VerifyEmail(c *gin.Context) {
 	err := u.Handler.VerifyEmail(ctx, cast.ToString(email))
 	if err != nil {
 		log.GetLog().Errorf("Unable to verify email. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -121,7 +121,7 @@ func (u User) ForgetPassword(c *gin.Context) {
 	err = u.Handler.ForgetPassword(ctx, &user)
 	if err != nil {
 		log.GetLog().Errorf("Unable to process forget-password. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -143,7 +143,7 @@ func (u User) UserProfile(c *gin.Context) {
 	user, err := u.Handler.UserProfile(ctx, fmt.Sprintf("%v", userID))
 	if err != nil {
 		log.GetLog().Errorf("Unable to get user profile. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -166,7 +166,7 @@ func (u User) EditProfile(c *gin.Context) {
 	err := c.ShouldBindJSON(&newDetail)
 	if err != nil {
 		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -192,7 +192,7 @@ func (u User) EditProfile(c *gin.Context) {
 	err = u.Handler.EditProfile(ctx, &newDetail, fmt.Sprintf("%v", userID))
 	if err != nil {
 		log.GetLog().Errorf("Unable to edit profile. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -203,8 +203,9 @@ func (u User) EditProfile(c *gin.Context) {
 }
 
 type RequestChangePassword struct {
-	Password  string `json:"password"`
-	Password2 string `json:"password2"`
+	CurrentPassword string `json:"current_password"`
+	Password        string `json:"password"`
+	Password2       string `json:"password2"`
 }
 
 func (u User) ChangePassword(c *gin.Context) {
@@ -236,10 +237,10 @@ func (u User) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	err = u.Handler.ChangePassword(ctx, userID.(int32), data.Password)
+	err = u.Handler.ChangePassword(ctx, userID.(int32), data.Password, data.CurrentPassword)
 	if err != nil {
 		log.GetLog().Errorf("Unable to change password. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -264,7 +265,7 @@ func (u User) Logout(c *gin.Context) {
 	err := u.Handler.Logout(ctx, token[0])
 	if err != nil {
 		log.GetLog().Errorf("Unable to logout. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -312,7 +313,7 @@ func (u User) ManagerAgreement(c *gin.Context) {
 	err = u.Handler.ManagerAgreement(ctx, userID.(int32), data.NationalID, data.BankAccount)
 	if err != nil {
 		log.GetLog().Errorf("Unable to manager agreement. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

@@ -269,7 +269,18 @@ func (u UserHandler) EditProfile(ctx context.Context, newDetail *models.User, us
 	return err
 }
 
-func (u UserHandler) ChangePassword(ctx context.Context, userID int32, password string) error {
+func (u UserHandler) ChangePassword(ctx context.Context, userID int32, password, currentPassword string) error {
+
+	foundUser, err := u.UserRepo.GetByID(ctx, userID)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to get user by id")
+		return err
+	}
+
+	if !utils.CheckPasswordHash(currentPassword, foundUser.Password) {
+		return errors.ErrPasswordIncorrect.Error()
+	}
+
 	hashedPassword, err := utils.HashPassword(password)
 	if err != nil {
 		log.GetLog().Errorf("Unable to hash password. error: %v", err)
