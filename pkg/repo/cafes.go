@@ -109,7 +109,7 @@ func (c *CafesRepoImp) GetByID(ctx context.Context, id int32) (*models.Cafe, err
 func (c *CafesRepoImp) SearchCafe(ctx context.Context, name string, province string, city string, category string) ([]models.Cafe, error) {
 	var cafes []models.Cafe
 	list := []string{}
-	query := "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories FROM cafes"
+	query := "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories, amenities FROM cafes"
 
 	if name != "" {
 		list = append(list, "name LIKE '%"+name+"%'")
