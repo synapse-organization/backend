@@ -266,8 +266,8 @@ func (c CafeHandler) CreateEvent(ctx context.Context, event models.Event) error 
 
 	if event.ImageID != "" {
 		err := c.ImageRepo.Create(ctx, &models.Image{
-			ID:     event.ImageID,
-			CafeID: event.CafeID,
+			ID:        event.ImageID,
+			Reference: eventID,
 		})
 
 		if err != nil {
@@ -308,8 +308,8 @@ func (c CafeHandler) AddMenuItem(ctx context.Context, menuItem *models.MenuItem)
 
 	if menuItem.ImageID != "" {
 		err := c.ImageRepo.Create(ctx, &models.Image{
-			ID:     menuItem.ImageID,
-			CafeID: menuItem.CafeID,
+			ID:        menuItem.ImageID,
+			Reference: menuItem.CafeID,
 		})
 
 		if err != nil {
