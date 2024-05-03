@@ -119,8 +119,8 @@ func (h ImageHandler) SubmitImage(context *gin.Context) {
 	}
 
 	image := &models.Image{
-		ID:     request.ImageID,
-		CafeID: request.CafeID,
+		ID:        request.ImageID,
+		Reference: request.CafeID,
 	}
 
 	err := h.ImageRepo.Create(context, image)

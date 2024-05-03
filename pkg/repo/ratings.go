@@ -13,6 +13,7 @@ type RatingsRepo interface {
 	GetByCafeID(ctx context.Context, cafeID int32) ([]*models.Rating, error)
 	GetCafesRating(ctx context.Context, cafeID int32) (float64, error)
 	GetByUserID(ctx context.Context, userID int32) ([]*models.Rating, error)
+	GetNTopRatings(ctx context.Context, n int32) ([]int32, error)
 }
 
 type RatingsRepoImp struct {
@@ -116,4 +117,24 @@ func (r *RatingsRepoImp) GetByUserID(ctx context.Context, userID int32) ([]*mode
 		ratings = append(ratings, &rating)
 	}
 	return ratings, nil
+}
+
+func (r *RatingsRepoImp) GetNTopRatings(ctx context.Context, n int32) ([]int32, error) {
+	rows, err := r.postgres.Query(ctx, "SELECT cafe_id FROM ratings GROUP BY cafe_id ORDER BY AVG(rating) DESC LIMIT $1", n)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get top ratings. error: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+	var cafeIDs []int32
+	for rows.Next() {
+		var cafeID int32
+		err = rows.Scan(&cafeID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to scan rating. error: %v", err)
+			return nil, err
+		}
+		cafeIDs = append(cafeIDs, cafeID)
+	}
+	return cafeIDs, nil
 }
