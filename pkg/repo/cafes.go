@@ -5,6 +5,7 @@ import (
 	"barista/pkg/models"
 	"context"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/spf13/cast"
 	"math/rand"
 	"strings"
 )
@@ -17,6 +18,7 @@ type CafesRepo interface {
 	Create(ctx context.Context, cafe *models.Cafe) (int32, error)
 	GetByID(ctx context.Context, id int32) (*models.Cafe, error)
 	SearchCafe(ctx context.Context, name string, address string, location string, category string) ([]models.Cafe, error)
+	GetByCafeIDs(ctx context.Context, ids []int32) ([]models.Cafe, error)
 }
 
 type CafesRepoImp struct {
@@ -149,6 +151,42 @@ func (c *CafesRepoImp) SearchCafe(ctx context.Context, name string, province str
 			cafe.Amenities = append(cafe.Amenities, models.AmenityCategory(strings.TrimSpace(amenity)))
 		}
 
+		cafes = append(cafes, cafe)
+	}
+
+	return cafes, err
+}
+
+func (c *CafesRepoImp) GetByCafeIDs(ctx context.Context, ids []int32) ([]models.Cafe, error) {
+	var cafes []models.Cafe
+	listIds := []string{}
+	if len(ids) == 0 {
+		return cafes, nil
+	}
+
+	for _, id := range ids {
+		listIds = append(listIds, cast.ToString(id))
+	}
+
+	query := "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories FROM cafes WHERE id IN ("
+	query += strings.Join(listIds, ",")
+	query += ")"
+
+	rows, err := c.postgres.Query(ctx, query)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafes by ids. error: %v", err)
+	}
+
+	for rows.Next() {
+		var cafe models.Cafe
+		catetories := ""
+		err = rows.Scan(&cafe.ID, &cafe.OwnerID, &cafe.Name, &cafe.Description, &cafe.OpeningTime, &cafe.ClosingTime, &cafe.Capacity, &cafe.ContactInfo.Phone, &cafe.ContactInfo.Email, &cafe.ContactInfo.Province, &cafe.ContactInfo.City, &cafe.ContactInfo.Address, &cafe.ContactInfo.Location, &catetories)
+		if err != nil {
+			log.GetLog().Errorf("Unable to scan cafe. error: %v", err)
+		}
+		for _, category := range strings.Split(catetories, ",") {
+			cafe.Categories = append(cafe.Categories, models.CafeCategory(strings.TrimSpace(category)))
+		}
 		cafes = append(cafes, cafe)
 	}
 

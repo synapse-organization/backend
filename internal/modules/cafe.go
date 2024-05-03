@@ -36,8 +36,8 @@ func (c CafeHandler) Create(ctx context.Context, cafe *models.Cafe) error {
 	}
 	for _, photoID := range cafe.Images {
 		err = c.ImageRepo.Create(ctx, &models.Image{
-			ID:     photoID,
-			CafeID: cafeID,
+			ID:        photoID,
+			Reference: cafeID,
 		})
 	}
 
@@ -66,7 +66,7 @@ func (c CafeHandler) SearchCafe(ctx context.Context, name string, address string
 	}
 
 	for i := range cafes {
-		images, err := c.ImageRepo.GetByCafeID(ctx, cafes[i].ID)
+		images, err := c.ImageRepo.GetByReferenceID(ctx, cafes[i].ID)
 		if err != nil {
 			log.GetLog().Errorf("Unable to get cafe images. error: %v", err)
 			continue
@@ -133,7 +133,7 @@ func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID int32) (*Publ
 		return nil, err
 	}
 
-	photos, err := c.ImageRepo.GetByCafeID(ctx, int32(cafeID))
+	photos, err := c.ImageRepo.GetByReferenceID(ctx, int32(cafeID))
 	if err != nil {
 		log.GetLog().Errorf("Unable to get photos by cafe id. error: %v", err)
 		return nil, err
@@ -266,8 +266,8 @@ func (c CafeHandler) CreateEvent(ctx context.Context, event models.Event) error 
 
 	if event.ImageID != "" {
 		err := c.ImageRepo.Create(ctx, &models.Image{
-			ID:     event.ImageID,
-			CafeID: event.CafeID,
+			ID:        event.ImageID,
+			Reference: eventID,
 		})
 
 		if err != nil {
@@ -308,8 +308,8 @@ func (c CafeHandler) AddMenuItem(ctx context.Context, menuItem *models.MenuItem)
 
 	if menuItem.ImageID != "" {
 		err := c.ImageRepo.Create(ctx, &models.Image{
-			ID:     menuItem.ImageID,
-			CafeID: menuItem.CafeID,
+			ID:        menuItem.ImageID,
+			Reference: menuItem.CafeID,
 		})
 
 		if err != nil {
@@ -344,4 +344,27 @@ func (c CafeHandler) GetMenu(ctx context.Context, cafeID int32) ([]string, map[s
 	}
 
 	return categories, menu, nil
+}
+
+func (c CafeHandler) Home(ctx context.Context) ([]models.Cafe, []*models.Comment, error) {
+	cafes, err := c.Rating.GetNTopRatings(ctx, 5)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get home cafes. error: %v", err)
+		return nil, nil, err
+	}
+
+	cafes = append(cafes, 1)
+	ds, err := c.CafeRepo.GetByCafeIDs(ctx, cafes)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	comments, err := c.CommentRepo.GetLast(ctx, 0, 5, 0)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get home comments. error: %v", err)
+		return nil, nil, err
+	}
+
+	return ds, comments, nil
+
 }

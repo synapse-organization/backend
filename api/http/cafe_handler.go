@@ -264,3 +264,13 @@ func (h Cafe) GetMenu(c *gin.Context) {
 	})
 	return
 }
+
+func (h Cafe) Home(c *gin.Context) {
+	cafe, comments, err := h.Handler.Home(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"cafes": cafe, "comments": comments})
+}
