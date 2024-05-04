@@ -4,6 +4,7 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -11,6 +12,8 @@ type ImageRepo interface {
 	Create(ctx context.Context, image *models.Image) error
 	GetByReferenceID(ctx context.Context, id int32) ([]*models.Image, error)
 	CheckExistence(ctx context.Context, imageID string) (bool, error)
+	DeleteByID(ctx context.Context, id string) error
+	DeleteByReferenceID(ctx context.Context, referenceID int32) error
 }
 
 type ImageRepoImp struct {
@@ -22,8 +25,7 @@ func NewImageRepoImp(postgres *pgxpool.Pool) *ImageRepoImp {
 		`CREATE TABLE IF NOT EXISTS images (
 				id TEXT PRIMARY KEY,
 				reference_id INTEGER,
-				create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				FOREIGN KEY (reference_id) REFERENCES cafes(id)
+				create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);`)
 	if err != nil {
 		log.GetLog().WithError(err).WithField("table", "images").Fatal("Unable to create table")
@@ -70,4 +72,28 @@ func (r *ImageRepoImp) CheckExistence(ctx context.Context, imageID string) (bool
 	}
 
 	return exists, err
+}
+
+func (r *ImageRepoImp) DeleteByID(ctx context.Context, id string) error {
+	_, err := r.postgres.Exec(ctx,
+		`DELETE FROM images
+		WHERE id = $1`, id)
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete image. error: %v", err)
+		return err
+	}
+
+	return err
+}
+
+func (r *ImageRepoImp) DeleteByReferenceID(ctx context.Context, referenceID int32) error {
+	_, err := r.postgres.Exec(ctx,
+		`DELETE FROM images
+		WHERE reference_id = $1`, referenceID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete image. error: %v", err)
+		return err
+	}
+
+	return err
 }

@@ -314,22 +314,22 @@ func (c CafeHandler) AddMenuItem(ctx context.Context, menuItem *models.MenuItem)
 		return nil, fmt.Errorf("invalid menu item category: %s", menuItem.Category)
 	}
 
+	itemID, err := c.MenuItemRepo.Create(ctx, menuItem)
+	if err != nil {
+		log.GetLog().Errorf("Unable to create menu item. error: %v", err)
+		return nil, err
+	}
+
 	if menuItem.ImageID != "" {
 		err := c.ImageRepo.Create(ctx, &models.Image{
 			ID:        menuItem.ImageID,
-			Reference: menuItem.CafeID,
+			Reference: itemID,
 		})
 
 		if err != nil {
 			log.GetLog().Errorf("Unable to create image. error: %v", err)
 			return nil, err
 		}
-	}
-
-	err := c.MenuItemRepo.Create(ctx, menuItem)
-	if err != nil {
-		log.GetLog().Errorf("Unable to create menu item. error: %v", err)
-		return nil, err
 	}
 
 	return menuItem, err
@@ -352,6 +352,74 @@ func (c CafeHandler) GetMenu(ctx context.Context, cafeID int32) ([]string, map[s
 	}
 
 	return categories, menu, nil
+}
+
+func (c CafeHandler) EditMenuItem(ctx context.Context, newItem models.MenuItem) error {
+	preItem, err := c.MenuItemRepo.GetByID(ctx, newItem.ID)
+	if err != nil {
+		log.GetLog().Errorf("Incorrect menu item id. error: %v", err)
+		return err
+	}
+
+	images, err := c.ImageRepo.GetByReferenceID(ctx, preItem.ID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get image by reference id. error: %v", err)
+		return err
+	}
+	
+	if len(images) != 0 {
+		preItem.ImageID = images[0].ID
+	}
+
+	if newItem.Name != preItem.Name && newItem.Name != "" {
+		err = c.MenuItemRepo.UpdateName(ctx, newItem.ID, newItem.Name)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update menu items name. error: %v", err)
+			return err
+		}
+	}
+
+	if newItem.Price != preItem.Price && newItem.Price != 0 {
+		err = c.MenuItemRepo.UpdatePrice(ctx, newItem.ID, newItem.Price)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update menu items price. error: %v", err)
+			return err
+		}
+	}
+
+	if len(newItem.Ingredients) != len(preItem.Ingredients) && len(newItem.Ingredients) != 0 {
+		err = c.MenuItemRepo.UpdateIngredients(ctx, newItem.ID, newItem.Ingredients)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update menu items ingredients. error: %v", err)
+			return err
+		}
+	}
+
+	if newItem.ImageID != preItem.ImageID && newItem.ImageID != "" {
+		err = c.MenuItemRepo.UpdateImageID(ctx, newItem.ID, newItem.ImageID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update menu items image. error: %v", err)
+			return err
+		}
+	}
+
+	return err
+}
+
+func (c CafeHandler) DeleteMenuItem(ctx context.Context, itemID int32) error {
+	err := c.MenuItemRepo.DeleteByID(ctx, itemID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete item by menu item id. error: %v", err)
+		return err
+	}
+
+	err = c.ImageRepo.DeleteByReferenceID(ctx, itemID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete image by menu item id. error: %v", err)
+		return err
+	}
+
+	return err
 }
 
 func (c CafeHandler) Home(ctx context.Context) ([]models.Cafe, []*models.Comment, error) {

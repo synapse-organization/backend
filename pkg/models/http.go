@@ -15,4 +15,5 @@ const (
 	GET  RequestMethod = "GET"
 	PUT RequestMethod = "PUT"
 	PATCH RequestMethod = "PATCH"
+	DELETE RequestMethod = "DELETE"
 )
