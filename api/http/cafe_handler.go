@@ -209,19 +209,19 @@ func (h Cafe) AddMenuItem(c *gin.Context) {
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		log.GetLog().WithError(err).Error("Unable to bind json")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
 
 	role, exists := c.Get("role")
 	if !exists {
 		log.GetLog().Errorf("Unable to get user role")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
 		return
 	}
 
 	if role.(int32) != 2 {
-		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error()})
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
 		return
 	}
 
@@ -246,7 +246,7 @@ func (h Cafe) GetMenu(c *gin.Context) {
 
 	cafe_id, err := strconv.Atoi(CafeID)
 	if err != nil {
-		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+		log.GetLog().Errorf("Unable to convert cafe id to int32. error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
@@ -262,6 +262,42 @@ func (h Cafe) GetMenu(c *gin.Context) {
 		"categories": categories,
 		"menu":       menu,
 	})
+	return
+}
+
+func (h Cafe) EditMenuItem(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req models.MenuItem
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error()})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	err = h.Handler.EditMenuItem(ctx, req)
+	if err != nil {
+		log.GetLog().Errorf("Unable to edit menu item. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	return
 }
 

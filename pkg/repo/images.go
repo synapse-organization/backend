@@ -22,8 +22,7 @@ func NewImageRepoImp(postgres *pgxpool.Pool) *ImageRepoImp {
 		`CREATE TABLE IF NOT EXISTS images (
 				id TEXT PRIMARY KEY,
 				reference_id INTEGER,
-				create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				FOREIGN KEY (reference_id) REFERENCES cafes(id)
+				create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);`)
 	if err != nil {
 		log.GetLog().WithError(err).WithField("table", "images").Fatal("Unable to create table")
