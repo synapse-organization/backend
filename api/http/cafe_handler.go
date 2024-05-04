@@ -25,14 +25,14 @@ func (h Cafe) Create(c *gin.Context) {
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
 
 	err = h.Handler.Create(ctx, &req)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create cafe. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error().Error()})
 		return
 	}
 
@@ -58,14 +58,14 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		log.GetLog().WithError(err).Error("Unable to bind json")
-		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
 
 	cafes, err := h.Handler.SearchCafe(ctx, req.Name, req.Province, req.City, req.Category)
 	if err != nil {
 		log.GetLog().Errorf("Unable to search cafe. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error().Error()})
 		return
 	}
 
@@ -81,7 +81,7 @@ func (h Cafe) PublicCafeProfile(c *gin.Context) {
 	cafe_id, err := strconv.Atoi(cafeID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid cafe_id query param"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
 
@@ -112,14 +112,14 @@ func (h Cafe) AddComment(c *gin.Context) {
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		log.GetLog().WithError(err).Error("Unable to bind json")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
 
 	userID, exists := c.Get("userID")
 	if !exists {
 		log.GetLog().Errorf("Unable to get token ID.")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to get token ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
 
@@ -134,37 +134,37 @@ func (h Cafe) AddComment(c *gin.Context) {
 	return
 }
 
-// func (h Cafe) GetComments(c *gin.Context) {
-// 	ctx, cancel := context.WithTimeout(c, TimeOut)
-// 	defer cancel()
+func (h Cafe) GetComments(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
 
-// 	CafeID := c.Query("cafe_id")
-// 	Counter := c.Query("counter")
+	CafeID := c.Query("cafe_id")
+	Counter := c.Query("counter")
 
-// 	cafe_id, err := strconv.Atoi(CafeID)
-// 	if err != nil {
-// 		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid cafe_id query param"})
-// 		return
-// 	}
+	cafe_id, err := strconv.Atoi(CafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
 
-// 	counter, err := strconv.Atoi(Counter)
-// 	if err != nil {
-// 		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid counter query param"})
-// 		return
-// 	}
+	counter, err := strconv.Atoi(Counter)
+	if err != nil {
+		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
 
-// 	comments, err := h.Handler.GetComments(ctx, int32(cafe_id), counter)
-// 	if err != nil {
-// 		log.GetLog().Errorf("Unable to get comments. error: %v", err)
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+	comments, err := h.Handler.GetComments(ctx, int32(cafe_id), counter)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get comments. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-// 	c.JSON(http.StatusOK, gin.H{"comments": comments})
-// 	return
-// }
+	c.JSON(http.StatusOK, gin.H{"comments": comments})
+	return
+}
 
 func (h Cafe) CreateEvent(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
@@ -181,12 +181,12 @@ func (h Cafe) CreateEvent(c *gin.Context) {
 	role, exists := c.Get("role")
 	if !exists {
 		log.GetLog().Errorf("Unable to get user role.")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
 		return
 	}
 
 	if role.(int32) != 2 {
-		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error()})
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
 		return
 	}
 
@@ -209,19 +209,19 @@ func (h Cafe) AddMenuItem(c *gin.Context) {
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		log.GetLog().WithError(err).Error("Unable to bind json")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
 
 	role, exists := c.Get("role")
 	if !exists {
 		log.GetLog().Errorf("Unable to get user role")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
 		return
 	}
 
 	if role.(int32) != 2 {
-		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error()})
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
 		return
 	}
 
