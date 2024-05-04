@@ -398,6 +398,22 @@ func (c CafeHandler) EditMenuItem(ctx context.Context, newItem models.MenuItem) 
 	return err
 }
 
+func (c CafeHandler) DeleteMenuItem(ctx context.Context, itemID int32) error {
+	err := c.MenuItemRepo.DeleteByID(ctx, itemID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete item by menu item id. error: %v", err)
+		return err
+	}
+
+	err = c.ImageRepo.DeleteByReferenceID(ctx, itemID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete image by menu item id. error: %v", err)
+		return err
+	}
+
+	return err
+}
+
 func (c CafeHandler) Home(ctx context.Context) ([]models.Cafe, []*models.Comment, error) {
 	cafes, err := c.Rating.GetNTopRatings(ctx, 5)
 	if err != nil {

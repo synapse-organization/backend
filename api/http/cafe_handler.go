@@ -301,6 +301,41 @@ func (h Cafe) EditMenuItem(c *gin.Context) {
 	return
 }
 
+func (h Cafe) DeleteMenuItem(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	Item := c.Query("item")
+	itemID, err := strconv.Atoi(Item)
+	if err != nil {
+		log.GetLog().Errorf("Invalid item type. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	err = h.Handler.DeleteMenuItem(ctx, int32(itemID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to edit menu item. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
+
 func (h Cafe) Home(c *gin.Context) {
 	cafe, comments, err := h.Handler.Home(c)
 	if err != nil {
