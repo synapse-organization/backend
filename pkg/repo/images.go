@@ -14,6 +14,7 @@ type ImageRepo interface {
 	CheckExistence(ctx context.Context, imageID string) (bool, error)
 	DeleteByID(ctx context.Context, id string) error
 	DeleteByReferenceID(ctx context.Context, referenceID int32) error
+	GetMainImage(ctx context.Context, referenceID int32) (string, error)
 }
 
 type ImageRepoImp struct {
@@ -79,7 +80,7 @@ func (r *ImageRepoImp) DeleteByID(ctx context.Context, id string) error {
 		`DELETE FROM images
 		WHERE id = $1`, id)
 	if err != nil {
-		log.GetLog().Errorf("Unable to delete image. error: %v", err)
+		log.GetLog().Errorf("Unable to delete image by id. error: %v", err)
 		return err
 	}
 
@@ -91,9 +92,29 @@ func (r *ImageRepoImp) DeleteByReferenceID(ctx context.Context, referenceID int3
 		`DELETE FROM images
 		WHERE reference_id = $1`, referenceID)
 	if err != nil {
-		log.GetLog().Errorf("Unable to delete image. error: %v", err)
+		log.GetLog().Errorf("Unable to delete image by reference id. error: %v", err)
 		return err
 	}
 
 	return err
+}
+
+func (r *ImageRepoImp) GetMainImage(ctx context.Context, referenceID int32) (string, error) {
+	imageID := ""
+	err := r.postgres.QueryRow(ctx,
+		`SELECT id
+		FROM images
+		WHERE reference_id = $1
+		ORDER BY create_at
+		LIMIT 1`, referenceID).Scan(&imageID)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			imageID = ""
+		}else {
+			log.GetLog().Errorf("Unable to get main image. error: %v", err)
+			return "", err
+		}
+	}
+
+	return imageID, nil
 }

@@ -251,7 +251,7 @@ func (h Cafe) GetMenu(c *gin.Context) {
 		return
 	}
 
-	categories, menu, err := h.Handler.GetMenu(ctx, int32(cafe_id))
+	categories, menu, cafeName, cafeImage, err := h.Handler.GetMenu(ctx, int32(cafe_id))
 	if err != nil {
 		log.GetLog().Errorf("Unable to get menu. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -261,6 +261,8 @@ func (h Cafe) GetMenu(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"categories": categories,
 		"menu":       menu,
+		"cafe_name":  cafeName,
+		"cafe_image": cafeImage,
 	})
 	return
 }

@@ -335,11 +335,23 @@ func (c CafeHandler) AddMenuItem(ctx context.Context, menuItem *models.MenuItem)
 	return menuItem, err
 }
 
-func (c CafeHandler) GetMenu(ctx context.Context, cafeID int32) ([]string, map[string][]*models.MenuItem, error) {
+func (c CafeHandler) GetMenu(ctx context.Context, cafeID int32) ([]string, map[string][]*models.MenuItem, string, string, error) {
 	menuItems, err := c.MenuItemRepo.GetItemsByCafeID(ctx, cafeID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get menu items. error: %v", err)
-		return nil, nil, err
+		return nil, nil, "", "", err
+	}
+
+	cafe, err := c.CafeRepo.GetByID(ctx, cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe. error: %v", err)
+		return nil, nil, "", "", err
+	}
+
+	imageID, err := c.ImageRepo.GetMainImage(ctx, cafe.ID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe. error: %v", err)
+		return nil, nil, "", "", err
 	}
 
 	var categories []string
@@ -351,7 +363,7 @@ func (c CafeHandler) GetMenu(ctx context.Context, cafeID int32) ([]string, map[s
 		menu[category] = append(menu[category], item)
 	}
 
-	return categories, menu, nil
+	return categories, menu, cafe.Name, imageID, nil
 }
 
 func (c CafeHandler) EditMenuItem(ctx context.Context, newItem models.MenuItem) error {

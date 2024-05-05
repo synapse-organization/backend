@@ -107,7 +107,7 @@ func (h ImageHandler) DownloadImage(c *gin.Context) {
 }
 
 type RequestSubmitImage struct {
-	CafeID  int32  `json:"cafe_id"`
+	ReferenceID  int32  `json:"reference_id"`
 	ImageID string `json:"image"`
 }
 
@@ -120,7 +120,7 @@ func (h ImageHandler) SubmitImage(context *gin.Context) {
 
 	image := &models.Image{
 		ID:        request.ImageID,
-		Reference: request.CafeID,
+		Reference: request.ReferenceID,
 	}
 
 	err := h.ImageRepo.Create(context, image)
