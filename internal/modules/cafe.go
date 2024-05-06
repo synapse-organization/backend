@@ -342,6 +342,18 @@ func (c CafeHandler) GetMenu(ctx context.Context, cafeID int32) ([]string, map[s
 		return nil, nil, "", "", err
 	}
 
+	for i, item := range menuItems {
+		images, err := c.ImageRepo.GetByReferenceID(ctx, item.ID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get image by reference id. error: %v", err)
+			return nil, nil, "", "", err
+		}
+
+		if len(images) > 0 {
+			menuItems[i].ImageID = images[0].ID
+		}
+	}
+
 	cafe, err := c.CafeRepo.GetByID(ctx, cafeID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get cafe. error: %v", err)
