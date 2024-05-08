@@ -86,7 +86,7 @@ type PublicCafeProvinceCity struct {
 	Description  string                   `json:"description"`
 	OpeningTime  int8                     `json:"opening_time"`
 	ClosingTime  int8                     `json:"closing_time"`
-	Comments     []CommentWithUserName     `json:"comments"`
+	Comments     []CommentWithUserName    `json:"comments"`
 	Rating       float64                  `json:"rating"`
 	Images       []string                 `json:"photos"`
 	Events       []models.Event           `json:"events"`
@@ -118,7 +118,7 @@ func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID int32) (*Publ
 			log.GetLog().Errorf("Unable to get user name for user ID %d: %v", comment.UserID, err)
 			return nil, err
 		}
-		
+
 		commentsWithNames[i].Comment = comment
 		commentsWithNames[i].UserFirstName = userName.FirstName
 		commentsWithNames[i].UserLastName = userName.LastName
@@ -484,4 +484,63 @@ func (c CafeHandler) ReserveEvent(ctx context.Context, eventID int32, userID int
 	}
 
 	return nil
+}
+
+type PrivateCafeRes struct {
+	ID           int32                    `json:"id"`
+	Name         string                   `json:"name"`
+	Description  string                   `json:"description"`
+	OpeningTime  int8                     `json:"opening_time"`
+	ClosingTime  int8                     `json:"closing_time"`
+	Comments     []CommentWithUserName    `json:"comments"`
+	Rating       float64                  `json:"rating"`
+	Images       []string                 `json:"photos"`
+	Events       []models.Event           `json:"events"`
+	Reservations []models.Reservation     `json:"reservations"`
+	Capacity     int32                    `json:"capacity"`
+	ContactInfo  models.ContactInfo       `json:"contact_info"`
+	Categories   []models.CafeCategory    `json:"categories"`
+	Amenities    []models.AmenityCategory `json:"amenities"`
+	ProvinceName string                   `json:"province_name"`
+	CityName     string                   `json:"city_name"`
+}
+
+func (c CafeHandler) PrivateCafeProfile(ctx context.Context, cafe models.Cafe) (*PrivateCafeRes, error) {
+	publicCafe, err := c.PublicCafeProfile(ctx, cafe.ID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get public cafe info. error: %v", err)
+		return nil, err
+	}
+
+	reservations, err := c.ReservationRepo.GetByCafeID(ctx, cafe.ID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get reservations by cafe id. error: %v", err)
+		return nil, err
+	}
+
+	cafe.Reservations = make([]models.Reservation, len(reservations))
+	for i, reservation := range reservations {
+		cafe.Reservations[i] = *reservation
+	}
+
+	privateCafe := PrivateCafeRes{
+		ID:           publicCafe.ID,
+		Name:         publicCafe.Name,
+		Description:  publicCafe.Description,
+		OpeningTime:  publicCafe.OpeningTime,
+		ClosingTime:  publicCafe.ClosingTime,
+		Comments:     publicCafe.Comments,
+		Rating:       publicCafe.Rating,
+		Images:       publicCafe.Images,
+		Events:       publicCafe.Events,
+		Reservations: cafe.Reservations,
+		Capacity:     publicCafe.Capacity,
+		ContactInfo:  publicCafe.ContactInfo,
+		Categories:   publicCafe.Categories,
+		Amenities:    publicCafe.Amenities,
+		ProvinceName: publicCafe.ProvinceName,
+		CityName:     publicCafe.CityName,
+	}
+
+	return &privateCafe, nil
 }

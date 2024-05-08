@@ -111,6 +111,7 @@ func Run() {
 	cafe.Handle(string(models.PATCH), "edit-menu-item", authMiddleware.IsAuthorized, cafeHttpHandler.EditMenuItem)
 	cafe.Handle(string(models.DELETE), "delete-menu-item", authMiddleware.IsAuthorized, cafeHttpHandler.DeleteMenuItem)
 	cafe.Handle(string(models.POST), "reserve-event", authMiddleware.IsAuthorized, cafeHttpHandler.ReserveEvent)
+	cafe.Handle(string(models.GET), "private-cafe-profile", authMiddleware.IsAuthorized, cafeHttpHandler.PrivateCafeProfile)
 
 	imageHandler := http.ImageHandler{MongoDb: mongoDb, MongoOpt: mongoDbOpt, ImageRepo: imageRepo}
 	image := apiV1.Group("/image")

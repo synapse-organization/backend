@@ -381,3 +381,59 @@ func (h Cafe) ReserveEvent(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	return
 }
+
+func (h Cafe) PrivateCafeProfile(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	cafeID := c.Query("cafe_id")
+	cafe_id, err := strconv.Atoi(cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user id")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	cafe, err := h.Handler.CafeRepo.GetByID(ctx, int32(cafe_id))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get user by id. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error().Error()})
+		return
+	}
+
+	if cafe.OwnerID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	privateCafe, err := h.Handler.PrivateCafeProfile(ctx, *cafe)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"cafe": privateCafe,
+	})
+	return
+}
