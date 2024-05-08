@@ -21,7 +21,7 @@ type MenuItemsRepo interface {
 	UpdateName(ctx context.Context, id int32, newName string) error
 	UpdatePrice(ctx context.Context, id int32, newPrice float64) error
 	UpdateIngredients(ctx context.Context, id int32, newIngredients []string) error
-	UpdateImageID(ctx context.Context, id int32, newImage string) error
+	// UpdateImageID(ctx context.Context, id int32, newImage string) error
 	DeleteByID(ctx context.Context, id int32) error
 }
 
@@ -149,29 +149,19 @@ func (c *MenuItemsRepoImp) UpdateIngredients(ctx context.Context, id int32, newI
 	return err
 }
 
-func (c *MenuItemsRepoImp) UpdateImageID(ctx context.Context, id int32, newImage string) error {
-	_, err := c.postgres.Exec(ctx,
-		`UPDATE images
-		SET id = $1
-		WHERE reference_id = $2`,
-		newImage, id)
-	if err != nil {
-		log.GetLog().Errorf("Unable to update menu items image in images. error: %v", err)
-		return err
-	}
+// func (c *MenuItemsRepoImp) UpdateImageID(ctx context.Context, id int32, newImage string) error {
+// 	_, err := c.postgres.Exec(ctx,
+// 		`UPDATE menu_items
+// 		SET image_id = $1
+// 		WHERE id = $2`,
+// 		newImage, id)
+// 	if err != nil {
+// 		log.GetLog().Errorf("Unable to update menu items image in menu items. error: %v", err)
+// 		return err
+// 	}
 
-	_, err = c.postgres.Exec(ctx,
-		`UPDATE menu_items
-		SET image_id = $1
-		WHERE id = $2`,
-		newImage, id)
-	if err != nil {
-		log.GetLog().Errorf("Unable to update menu items image in menu items. error: %v", err)
-		return err
-	}
-
-	return err
-}
+// 	return err
+// }
 
 func (c *MenuItemsRepoImp) DeleteByID(ctx context.Context, id int32) error {
 	_, err := c.postgres.Exec(ctx,
