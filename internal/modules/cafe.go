@@ -390,7 +390,7 @@ func (c CafeHandler) EditMenuItem(ctx context.Context, newItem models.MenuItem) 
 		log.GetLog().Errorf("Unable to get image by reference id. error: %v", err)
 		return err
 	}
-	
+
 	if len(images) != 0 {
 		preItem.ImageID = images[0].ID
 	}
@@ -419,11 +419,19 @@ func (c CafeHandler) EditMenuItem(ctx context.Context, newItem models.MenuItem) 
 		}
 	}
 
-	if newItem.ImageID != preItem.ImageID && newItem.ImageID != "" {
-		err = c.MenuItemRepo.UpdateImageID(ctx, newItem.ID, newItem.ImageID)
-		if err != nil {
-			log.GetLog().Errorf("Unable to update menu items image. error: %v", err)
-			return err
+	if newItem.ImageID != "" {
+		if newItem.ImageID == preItem.ImageID {
+			err := c.ImageRepo.DeleteByID(ctx, newItem.ImageID)
+			if err != nil {
+				log.GetLog().Errorf("Unable to delete image by id. error: %v", err)
+				return err
+			}
+		} else {
+			err = c.ImageRepo.UpdateByReferenceID(ctx, newItem.ID, newItem.ImageID)
+			if err != nil {
+				log.GetLog().Errorf("Unable to update menu items image. error: %v", err)
+				return err
+			}
 		}
 	}
 
@@ -466,5 +474,4 @@ func (c CafeHandler) Home(ctx context.Context) ([]models.Cafe, []*models.Comment
 	}
 
 	return ds, comments, nil
-
 }
