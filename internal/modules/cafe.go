@@ -475,3 +475,13 @@ func (c CafeHandler) Home(ctx context.Context) ([]models.Cafe, []*models.Comment
 
 	return ds, comments, nil
 }
+
+func (c CafeHandler) ReserveEvent(ctx context.Context, eventID int32, userID int32) error {
+	err := c.EventRepo.CreateEventForUser(ctx, userID, eventID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to create event for user. error: %v", err)
+		return err
+	}
+
+	return nil
+}
