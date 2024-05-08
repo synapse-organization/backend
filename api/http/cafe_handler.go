@@ -347,3 +347,37 @@ func (h Cafe) Home(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"cafes": cafe, "comments": comments})
 }
+
+type RequestReserveEvent struct {
+	EventID int32 `json:"event_id"`
+}
+
+func (h Cafe) ReserveEvent(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+	var data RequestReserveEvent
+
+	err := c.ShouldBindJSON(&data)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user id.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	err = h.Handler.ReserveEvent(ctx, data.EventID, userID.(int32))
+	if err != nil {
+		log.GetLog().Errorf("Unable to add menu item. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
