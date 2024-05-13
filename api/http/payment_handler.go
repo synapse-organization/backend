@@ -103,3 +103,24 @@ func (h Payment) Withdraw(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
+
+func (h Payment) Balance(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get token ID.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
+		return
+	}
+
+	balance, err := h.Handler.Balance(ctx, cast.ToInt32(userID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to create cafe. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error().Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"balance": balance})
+}
