@@ -144,7 +144,7 @@ func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) erro
 	}
 
 	// Generate a random password
-	newPassword := utils.GenerateRandomPassword(passwordLength)
+	newPassword := utils.GenerateRandomStr(passwordLength)
 
 	for _, foundUser := range foundUsers {
 		// Update user's password with the new random password
