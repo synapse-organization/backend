@@ -92,6 +92,8 @@ func Run() {
 	eventRepo := repo.NewEventRepoImp(postgres)
 	reservationRepo := repo.NewReservationRepoImp(postgres)
 	menuItemRepo := repo.NewMenuItemRepoImp(postgres)
+	paymentRepo := repo.NewTransactionImp(postgres)
+
 	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, CommentRepo: commentRepo, ImageRepo: imageRepo, EventRepo: eventRepo, UserRepo: userRepo, ReservationRepo: reservationRepo, MenuItemRepo: menuItemRepo}
 	cafeHttpHandler := http.Cafe{Handler: &cafeHandler}
 
@@ -115,6 +117,13 @@ func Run() {
 	image.Handle(string(models.POST), "upload", imageHandler.UploadImage)
 	image.Handle(string(models.GET), "download", imageHandler.DownloadImage)
 	image.Handle(string(models.POST), "submit", imageHandler.SubmitImage)
+
+	paymentHandler := modules.PaymentHandler{PaymentRepo: paymentRepo}
+	paymentHttpHandler := http.Payment{Handler: &paymentHandler}
+	payment := apiV1.Group("/payment")
+	payment.Handle(string(models.POST), "transfer", paymentHttpHandler.Transfer)
+	payment.Handle(string(models.POST), "deposit", paymentHttpHandler.Deposit)
+	payment.Handle(string(models.POST), "withdraw", paymentHttpHandler.Withdraw)
 
 	service.Run(":8080")
 }

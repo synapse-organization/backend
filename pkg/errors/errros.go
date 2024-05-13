@@ -19,6 +19,7 @@ var (
 	ErrBadRequest        = StringError{Msg: "درخواست نامعتبر است"}
 	ErrDidntLogin        = StringError{Msg: "شما وارد نشده اید"}
 	ErrInternalError     = StringError{Msg: "خطای داخلی"}
+	ErrNotEnoughBalance  = StringError{Msg: "موجودی کافی نیست"}
 )
 
 type StringError struct {

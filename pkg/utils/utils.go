@@ -16,7 +16,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func GenerateRandomPassword(length int) string {
+func GenerateRandomStr(length int) string {
 	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	password := make([]byte, length)
@@ -112,10 +112,10 @@ func CheckEndTime(startTime time.Time, endTime time.Time) bool {
 }
 
 func AppendIfNotExists(slice []string, str string) []string {
-    for _, s := range slice {
-        if s == str {
-            return slice
-        }
-    }
-    return append(slice, str)
+	for _, s := range slice {
+		if s == str {
+			return slice
+		}
+	}
+	return append(slice, str)
 }
