@@ -115,12 +115,7 @@ func (h Payment) Balance(c *gin.Context) {
 		return
 	}
 
-	balance, err := h.Handler.Balance(ctx, cast.ToInt32(userID))
-	if err != nil {
-		log.GetLog().Errorf("Unable to create cafe. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error().Error()})
-		return
-	}
+	balance := h.Handler.Balance(ctx, cast.ToInt32(userID))
 
 	c.JSON(http.StatusOK, gin.H{"balance": balance})
 }
