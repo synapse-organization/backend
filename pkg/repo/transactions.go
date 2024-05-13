@@ -4,10 +4,11 @@ import (
 	"barista/pkg/errors"
 	"barista/pkg/log"
 	"barista/pkg/models"
-	"barista/pkg/utils"
 	"context"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"math/rand"
+	"time"
 )
 
 type Transaction interface {
@@ -43,7 +44,13 @@ func NewTransactionImp(postgres *pgxpool.Pool) Transaction {
 }
 
 func (t *TransactionImp) Create(ctx context.Context, transaction *models.Transaction) (e error) {
-	transaction.ID = utils.GenerateRandomStr(12)
+	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
+	password := make([]byte, 12)
+	for i := range password {
+		password[i] = charset[random.Intn(len(charset))]
+	}
+	transaction.ID = string(password)
 	// transactions
 	tx, e := t.postgres.BeginTx(ctx, pgx.TxOptions{})
 	if e != nil {

@@ -1,7 +1,6 @@
 package modules
 
 import (
-	"barista/api/http"
 	"barista/pkg/models"
 	"barista/pkg/repo"
 	"context"
@@ -11,7 +10,7 @@ type PaymentHandler struct {
 	PaymentRepo repo.Transaction
 }
 
-func (h PaymentHandler) Transfer(ctx context.Context, userID int32, r *http.RequestTransfer) error {
+func (h PaymentHandler) Transfer(ctx context.Context, userID int32, r *models.RequestTransfer) error {
 	return h.PaymentRepo.Create(ctx, &models.Transaction{
 		SenderID:   userID,
 		ReceiverID: r.To,
@@ -20,7 +19,7 @@ func (h PaymentHandler) Transfer(ctx context.Context, userID int32, r *http.Requ
 	})
 }
 
-func (h PaymentHandler) Deposit(ctx context.Context, userID int32, r *http.RequestDeposit) error {
+func (h PaymentHandler) Deposit(ctx context.Context, userID int32, r *models.RequestDeposit) error {
 	return h.PaymentRepo.Create(ctx, &models.Transaction{
 		SenderID:   userID,
 		ReceiverID: userID,
@@ -29,7 +28,7 @@ func (h PaymentHandler) Deposit(ctx context.Context, userID int32, r *http.Reque
 	})
 }
 
-func (h PaymentHandler) Withdraw(ctx context.Context, userID int32, r *http.RequestWithdraw) error {
+func (h PaymentHandler) Withdraw(ctx context.Context, userID int32, r *models.RequestWithdraw) error {
 	return h.PaymentRepo.Create(ctx, &models.Transaction{
 		SenderID:   userID,
 		ReceiverID: userID,
