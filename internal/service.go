@@ -124,6 +124,6 @@ func Run() {
 	payment.Handle(string(models.POST), "transfer", paymentHttpHandler.Transfer)
 	payment.Handle(string(models.POST), "deposit", paymentHttpHandler.Deposit)
 	payment.Handle(string(models.POST), "withdraw", paymentHttpHandler.Withdraw)
-
+	payment.Handle(string(models.GET), "balance", paymentHttpHandler.Balance)
 	service.Run(":8080")
 }

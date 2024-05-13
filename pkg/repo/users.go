@@ -17,6 +17,7 @@ type UsersRepo interface {
 	Verify(ctx context.Context, email string) error
 	GetByID(ctx context.Context, id int32) (*models.User, error)
 	GetByEmail(ctx context.Context, email string) ([]*models.User, error)
+	GetBalance(ctx context.Context, id int32) (int64, error)
 	DeleteByID(ctx context.Context, id int32) error
 	UpdateFirstName(ctx context.Context, id int32, newFirstName string) error
 	UpdateLastName(ctx context.Context, id int32, newLastName string) error
@@ -99,6 +100,14 @@ func (u *UserRepoImp) GetByEmail(ctx context.Context, email string) ([]*models.U
 		users = append(users, &user)
 	}
 	return users, nil
+}
+func (u *UserRepoImp) GetBalance(ctx context.Context, id int32) (int64, error) {
+	var balance int64
+	err := u.postgres.QueryRow(ctx, "SELECT balance FROM users WHERE id = $1", id).Scan(&balance)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get balance by id. error: %v", err)
+	}
+	return balance, err
 }
 
 func (u *UserRepoImp) DeleteByID(ctx context.Context, id int32) error {
