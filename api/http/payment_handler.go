@@ -4,6 +4,7 @@ import (
 	"barista/internal/modules"
 	"barista/pkg/errors"
 	"barista/pkg/log"
+	"barista/pkg/models"
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cast"
@@ -14,15 +15,10 @@ type Payment struct {
 	Handler *modules.PaymentHandler
 }
 
-type RequestTransfer struct {
-	To     int32 `json:"to"`
-	Amount int64 `json:"amount"`
-}
-
 func (h Payment) Transfer(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
-	var req RequestTransfer
+	var req models.RequestTransfer
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
@@ -49,14 +45,10 @@ func (h Payment) Transfer(c *gin.Context) {
 
 }
 
-type RequestDeposit struct {
-	Amount int64 `json:"amount"`
-}
-
 func (h Payment) Deposit(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
-	var req RequestDeposit
+	var req models.RequestDeposit
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
@@ -83,15 +75,10 @@ func (h Payment) Deposit(c *gin.Context) {
 
 }
 
-type RequestWithdraw struct {
-	To     int32 `json:"to"`
-	Amount int64 `json:"amount"`
-}
-
 func (h Payment) Withdraw(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
-	var req RequestWithdraw
+	var req models.RequestWithdraw
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
