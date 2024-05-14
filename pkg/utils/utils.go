@@ -119,3 +119,11 @@ func AppendIfNotExists(slice []string, str string) []string {
 	}
 	return append(slice, str)
 }
+
+func CheckCafeTimeValidity(cafeTime int8) bool {
+	return cafeTime >= 0 && cafeTime <= 23
+}
+
+func CheckCapacityValidity(capacity int32) bool {
+	return capacity > 0
+}

@@ -20,6 +20,7 @@ var (
 	ErrDidntLogin        = StringError{Msg: "شما وارد نشده اید"}
 	ErrInternalError     = StringError{Msg: "خطای داخلی"}
 	ErrNotEnoughBalance  = StringError{Msg: "موجودی کافی نیست"}
+	ErrCapacityInvalid   = StringError{Msg: "ظرفیت وارد شده نامعتبر است"}
 )
 
 type StringError struct {
