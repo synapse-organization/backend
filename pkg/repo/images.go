@@ -48,6 +48,7 @@ func (r *ImageRepoImp) GetByReferenceID(ctx context.Context, id int32) ([]*model
 	rows, err := r.postgres.Query(ctx, "SELECT id, reference_id FROM images WHERE reference_id = $1 ORDER BY create_at DESC", id)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get images by cafe id. error: %v", err)
+
 	}
 
 	for rows.Next() {
@@ -132,4 +133,29 @@ func (r *ImageRepoImp) UpdateByReferenceID(ctx context.Context, referenceID int3
 	}
 
 	return nil
+}
+
+func (r *ImageRepoImp) GetOrdered(ctx context.Context, referenceID int32) ([]*models.Image, error) {
+	var images []*models.Image
+	rows, err := r.postgres.Query(ctx,
+		`SELECT id, reference_id
+		FROM images
+		WHERE reference_id = $1
+		ORDER BY create_at`, referenceID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get images by reference id. error: %v", err)
+		return nil, err
+	}
+
+	for rows.Next() {
+		var image models.Image
+		err := rows.Scan(&image.ID, &image.Reference)
+		if err != nil {
+			log.GetLog().Errorf("Unable to scan image. error: %v", err)
+			continue
+		}
+		images = append(images, &image)
+	}
+
+	return images, nil
 }

@@ -15,11 +15,30 @@ func init() {
 	log.GetLog().Info("Init CafesRepo")
 }
 
+type UpdateType string
+
+const (
+	UpdateName        UpdateType = "name"
+	UpdateDescription UpdateType = "description"
+	UpdateOpeningTime UpdateType = "opening_time"
+	UpdateClosingTime UpdateType = "closing_time"
+	UpdateCapacity    UpdateType = "capacity"
+	UpdatePhoneNumber UpdateType = "phone_number"
+	UpdateEmail       UpdateType = "email"
+	UpdateLocation    UpdateType = "location"
+	UpdateProvince    UpdateType = "province"
+	UpdateCity        UpdateType = "city"
+	UpdateAddress     UpdateType = "address"
+	UpdateCategories  UpdateType = "categories"
+	UpdateAmenities   UpdateType = "amenities"
+)
+
 type CafesRepo interface {
 	Create(ctx context.Context, cafe *models.Cafe) (int32, error)
 	GetByID(ctx context.Context, id int32) (*models.Cafe, error)
 	SearchCafe(ctx context.Context, name string, address string, location string, category string) ([]models.Cafe, error)
 	GetByCafeIDs(ctx context.Context, ids []int32) ([]models.Cafe, error)
+	Update(ctx context.Context, id int32, updateType UpdateType, value interface{}) error
 }
 
 type CafesRepoImp struct {
@@ -36,7 +55,7 @@ func NewCafeRepoImp(postgres *pgxpool.Pool) *CafesRepoImp {
 				opening_time INTEGER,
 				closing_time INTEGER,
 				capacity INTEGER,
-				phone_number TEXT,
+				phone_number BIGINT,
 				email TEXT,
 				location TEXT,
 				province INTEGER,
@@ -192,4 +211,50 @@ func (c *CafesRepoImp) GetByCafeIDs(ctx context.Context, ids []int32) ([]models.
 	}
 
 	return cafes, err
+}
+
+func (c *CafesRepoImp) Update(ctx context.Context, id int32, updateType UpdateType, value interface{}) error {
+	columnName := string(updateType)
+	if columnName == "categories" {
+		categoriesVal := value.([]models.CafeCategory)
+		categories := ""
+		for i, category := range categoriesVal {
+			categories += string(category)
+			if i != len(categoriesVal)-1 {
+				categories += ","
+			}
+		}
+		value = categories
+	} else if columnName == "amenities" {
+		amenitiesVal := value.([]models.AmenityCategory)
+		amenities := ""
+		for i, category := range amenitiesVal {
+			amenities += string(category)
+			if i != len(amenitiesVal)-1 {
+				amenities += ","
+			}
+		}
+		value = amenities
+	}
+
+	query := "UPDATE cafes SET " + columnName + " = $1 WHERE id = $2"
+	_, err := c.postgres.Exec(ctx, query, value, id)
+	if err != nil {
+		log.GetLog().Errorf("Unable to update cafe. error: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (c *CafesRepoImp) DeleteByID(ctx context.Context, id int32) error {
+	_, err := c.postgres.Exec(ctx,
+		`DELETE FROM menu_items
+		WHERE id = $1`, id)
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete menu item. error: %v", err)
+		return err
+	}
+
+	return err
 }
