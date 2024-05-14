@@ -20,7 +20,7 @@ type Cafe struct {
 }
 
 type ContactInfo struct {
-	Phone    string `json:"phone"`
+	Phone    int64 `json:"phone"`
 	Email    string `json:"email"`
 	Location string `json:"location"`
 	Province int    `json:"province"`

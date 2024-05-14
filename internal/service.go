@@ -99,7 +99,6 @@ func Run() {
 
 	cafe := apiV1.Group("/cafe")
 	cafe.Handle(string(models.POST), "create", cafeHttpHandler.Create)
-	cafe.Handle(string(models.GET), "get-cafe", cafeHttpHandler.GetCafe)
 	cafe.Handle(string(models.POST), "search-cafe", cafeHttpHandler.SearchCafe)
 	cafe.Handle(string(models.GET), "public-cafe-profile", cafeHttpHandler.PublicCafeProfile)
 	cafe.Handle(string(models.POST), "add-comment", authMiddleware.IsAuthorized, cafeHttpHandler.AddComment)
@@ -111,7 +110,9 @@ func Run() {
 	cafe.Handle(string(models.PATCH), "edit-menu-item", authMiddleware.IsAuthorized, cafeHttpHandler.EditMenuItem)
 	cafe.Handle(string(models.DELETE), "delete-menu-item", authMiddleware.IsAuthorized, cafeHttpHandler.DeleteMenuItem)
 	cafe.Handle(string(models.POST), "reserve-event", authMiddleware.IsAuthorized, cafeHttpHandler.ReserveEvent)
-	cafe.Handle(string(models.GET), "private-cafe-profile", authMiddleware.IsAuthorized, cafeHttpHandler.PrivateCafeProfile)
+	// cafe.Handle(string(models.GET), "private-cafe", authMiddleware.IsAuthorized, cafeHttpHandler.PrivateCafe)
+	cafe.Handle(string(models.PATCH), "edit-cafe", authMiddleware.IsAuthorized, cafeHttpHandler.EditCafe)
+	// cafe.Handle(string(models.PATCH), "edit-event", authMiddleware.IsAuthorized, cafeHttpHandler.EditEvent)
 
 	imageHandler := http.ImageHandler{MongoDb: mongoDb, MongoOpt: mongoDbOpt, ImageRepo: imageRepo}
 	image := apiV1.Group("/image")

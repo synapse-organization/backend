@@ -39,10 +39,6 @@ func (h Cafe) Create(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-func (h Cafe) GetCafe(c *gin.Context) {
-
-}
-
 type RequestSearchCafe struct {
 	Name     string `json:"name"`
 	Province string `json:"province"`
@@ -382,7 +378,7 @@ func (h Cafe) ReserveEvent(c *gin.Context) {
 	return
 }
 
-func (h Cafe) PrivateCafeProfile(c *gin.Context) {
+func (h Cafe) PrivateCafe(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
@@ -425,7 +421,7 @@ func (h Cafe) PrivateCafeProfile(c *gin.Context) {
 		return
 	}
 
-	privateCafe, err := h.Handler.PrivateCafeProfile(ctx, *cafe)
+	privateCafe, err := h.Handler.PrivateCafe(ctx, *cafe)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -435,5 +431,41 @@ func (h Cafe) PrivateCafeProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"cafe": privateCafe,
 	})
+	return
+}
+
+func (h Cafe) EditCafe(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var data modules.RequestEditCafe
+
+	err := c.ShouldBindJSON(&data)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	err = h.Handler.EditCafe(ctx, data)
+	if err != nil {
+		log.GetLog().Errorf("Unable to edit cafe. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	return
 }

@@ -505,7 +505,7 @@ type PrivateCafeRes struct {
 	CityName     string                   `json:"city_name"`
 }
 
-func (c CafeHandler) PrivateCafeProfile(ctx context.Context, cafe models.Cafe) (*PrivateCafeRes, error) {
+func (c CafeHandler) PrivateCafe(ctx context.Context, cafe models.Cafe) (*PrivateCafeRes, error) {
 	publicCafe, err := c.PublicCafeProfile(ctx, cafe.ID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get public cafe info. error: %v", err)
@@ -543,4 +543,171 @@ func (c CafeHandler) PrivateCafeProfile(ctx context.Context, cafe models.Cafe) (
 	}
 
 	return &privateCafe, nil
+}
+
+type RequestEditCafe struct {
+	ID            int32                    `json:"id"`
+	Name          string                   `json:"name"`
+	Description   string                   `json:"description"`
+	OpeningTime   int8                     `json:"opening_time"`
+	ClosingTime   int8                     `json:"closing_time"`
+	DeletedImages []string                 `json:"deleted_images"`
+	AddedImages   []string                 `json:"added_images"`
+	Capacity      int32                    `json:"capacity"`
+	ContactInfo   models.ContactInfo       `json:"contact_info"`
+	Categories    []models.CafeCategory    `json:"categories"`
+	Amenities     []models.AmenityCategory `json:"amenities"`
+}
+
+func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) error {
+	preCafe, err := c.CafeRepo.GetByID(ctx, newCafe.ID)
+	if err != nil {
+		log.GetLog().Errorf("Incorrect cafe id. error: %v", err)
+		return err
+	}
+
+	images, err := c.ImageRepo.GetByReferenceID(ctx, newCafe.ID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get image by reference id. error: %v", err)
+		return err
+	}
+
+	for i, image := range images {
+		preCafe.Images[i] = image.ID
+	}
+
+	if preCafe.Name != newCafe.Name {
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateName, newCafe.Name)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update cafes name. error: %v", err)
+			return err
+		}
+	}
+
+	if preCafe.Description != newCafe.Description {
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateDescription, newCafe.Description)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update cafes description. error: %v", err)
+			return err
+		}
+	}
+
+	if preCafe.OpeningTime != newCafe.OpeningTime {
+		if !utils.CheckCafeTimeValidity(newCafe.OpeningTime) {
+			errors.ErrStartTimeInvalid.Error()
+		}
+
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateOpeningTime, newCafe.OpeningTime)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update cafes opening time. error: %v", err)
+			return err
+		}
+	}
+
+	if preCafe.ClosingTime != newCafe.ClosingTime {
+		if !utils.CheckCafeTimeValidity(newCafe.ClosingTime) {
+			errors.ErrEndTimeInvalid.Error()
+		}
+
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateClosingTime, newCafe.ClosingTime)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update cafes closing time. error: %v", err)
+			return err
+		}
+	}
+
+	if preCafe.Capacity != newCafe.Capacity {
+		if !utils.CheckCapacityValidity(newCafe.Capacity) {
+			return errors.ErrCapacityInvalid.Error()
+		}
+
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCapacity, newCafe.Capacity)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update cafes capacity. error: %v", err)
+			return err
+		}
+	}
+
+	if preCafe.ContactInfo.Phone != newCafe.ContactInfo.Phone {
+		if !utils.CheckPhoneValidity(newCafe.ContactInfo.Phone) {
+			return errors.ErrPhoneInvalid.Error()
+		}
+
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdatePhoneNumber, newCafe.ContactInfo.Phone)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update cafes phone number. error: %v", err)
+			return err
+		}
+	}
+
+	if preCafe.ContactInfo.Email != newCafe.ContactInfo.Email {
+		if !utils.CheckEmailValidity(newCafe.ContactInfo.Email) {
+			return errors.ErrEmailExists.Error()
+		}
+
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateEmail, newCafe.ContactInfo.Email)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update cafes email. error: %v", err)
+			return err
+		}
+	}
+
+	if preCafe.ContactInfo.Province != newCafe.ContactInfo.Province {
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateProvince, newCafe.ContactInfo.Province)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update cafes province. error: %v", err)
+			return err
+		}
+	}
+
+	if preCafe.ContactInfo.City != newCafe.ContactInfo.City {
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCity, newCafe.ContactInfo.City)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update cafes city. error: %v", err)
+			return err
+		}
+	}
+
+	if preCafe.ContactInfo.Address != newCafe.ContactInfo.Address {
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateAddress, newCafe.ContactInfo.Address)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update cafes address. error: %v", err)
+			return err
+		}
+	}
+
+	err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCategories, newCafe.Categories)
+	if err != nil {
+		log.GetLog().Errorf("Unable to update cafes categories. error: %v", err)
+		return err
+	}
+
+	err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateAmenities, newCafe.Amenities)
+	if err != nil {
+		log.GetLog().Errorf("Unable to update cafes amenities. error: %v", err)
+		return err
+	}
+
+	for _, imageID := range newCafe.DeletedImages {
+		err = c.ImageRepo.DeleteByID(ctx, imageID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to delete image by id. error: %v", err)
+			return err
+		}
+	}
+
+	for _, imageID := range newCafe.AddedImages {
+		if imageID != "" {
+			err = c.ImageRepo.Create(ctx, &models.Image{
+				ID: imageID,
+				Reference: newCafe.ID,
+			})
+			if err != nil {
+				log.GetLog().Errorf("Unable to add image by id. error: %v", err)
+				return err
+			}
+		}
+	}
+
+	return err
 }
