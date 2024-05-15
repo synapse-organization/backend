@@ -133,6 +133,13 @@ func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID int32) (*Publ
 	cafe.Events = make([]models.Event, len(events))
 	for i, event := range events {
 		cafe.Events[i] = *event
+		images, err := c.ImageRepo.GetByReferenceID(ctx, event.ID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get images by event id. error: %v", err)
+			return nil, err
+		}
+
+		cafe.Events[i].ImageID = images[0].ID
 	}
 
 	cafe.Rating, err = c.Rating.GetCafesRating(ctx, int32(cafeID))
