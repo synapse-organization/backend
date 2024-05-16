@@ -127,5 +127,11 @@ func Run() {
 	payment.Handle(string(models.POST), "deposit", authMiddleware.IsAuthorized, paymentHttpHandler.Deposit)
 	payment.Handle(string(models.POST), "withdraw", authMiddleware.IsAuthorized, paymentHttpHandler.Withdraw)
 	payment.Handle(string(models.GET), "balance", authMiddleware.IsAuthorized, paymentHttpHandler.Balance)
+
+	publicHandler := http.PublicHandler{}
+	public := apiV1.Group("/public")
+	public.Handle(string(models.GET), "health", publicHandler.HealthCheck)
+	public.StaticFile("/province", "./assets/ostan.json")
+	public.Handle(string(models.GET), "/cities", publicHandler.GetCities)
 	service.Run(":8080")
 }
