@@ -140,6 +140,13 @@ func (u User) UserProfile(c *gin.Context) {
 		return
 	}
 
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
+
+	}
+
 	user, err := u.Handler.UserProfile(ctx, fmt.Sprintf("%v", userID))
 	if err != nil {
 		log.GetLog().Errorf("Unable to get user profile. error: %v", err)
@@ -147,6 +154,19 @@ func (u User) UserProfile(c *gin.Context) {
 		return
 	}
 
+	if role.(int32) == 2 {
+		c.JSON(http.StatusOK, gin.H{
+			"status":       "ok",
+			"first_name":   user.FirstName,
+			"last_name":    user.LastName,
+			"email":        user.Email,
+			"phone":        user.Phone,
+			"sex":          user.Sex,
+			"bank_account": user.BankAccount,
+			"national_id":  user.NationalID,
+		})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"status":     "ok",
 		"first_name": user.FirstName,
