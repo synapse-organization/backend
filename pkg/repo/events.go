@@ -13,11 +13,10 @@ type UpdateEventType string
 const (
 	UpdateEventName          UpdateEventType = "name"
 	UpdateEventDescription   UpdateEventType = "description"
-	UpdateEventOpeningTime   UpdateEventType = "start_time"
-	UpdateEventClosingTime   UpdateEventType = "end_time"
-	UpdateEventCapacity      UpdateEventType = "image_id"
-	UpdateEventPhoneNumber   UpdateEventType = "price"
-	UpdateEventEmail         UpdateEventType = "capacity"
+	UpdateEventStartTime     UpdateEventType = "start_time"
+	UpdateEventEndTime       UpdateEventType = "end_time"
+	UpdateEventPrice         UpdateEventType = "price"
+	UpdateEventCapacity      UpdateEventType = "capacity"
 	UpdateEventAttendees     UpdateEventType = "current_attendees"
 	UpdateEventReservability UpdateEventType = "reservable"
 )

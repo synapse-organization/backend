@@ -15,7 +15,6 @@ type ImageRepo interface {
 	DeleteByID(ctx context.Context, id string) error
 	DeleteByReferenceID(ctx context.Context, referenceID int32) error
 	GetMainImage(ctx context.Context, referenceID int32) (string, error)
-	UpdateByReferenceID(ctx context.Context, referenceID int32, id string) error
 }
 
 type ImageRepoImp struct {
@@ -119,20 +118,6 @@ func (r *ImageRepoImp) GetMainImage(ctx context.Context, referenceID int32) (str
 	}
 
 	return imageID, nil
-}
-
-func (r *ImageRepoImp) UpdateByReferenceID(ctx context.Context, referenceID int32, id string) error {
-	_, err := r.postgres.Exec(ctx,
-		`UPDATE images
-		SET reference_id = $1
-		WHERE id = $2`,
-		referenceID, id)
-	if err != nil {
-		log.GetLog().Errorf("Unable to update image. error: %v", err)
-		return err
-	}
-
-	return nil
 }
 
 func (r *ImageRepoImp) GetOrdered(ctx context.Context, referenceID int32) ([]*models.Image, error) {
