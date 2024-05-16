@@ -48,3 +48,7 @@ func (h PaymentHandler) Balance(ctx context.Context, userID int32) int64 {
 	}
 	return balance
 }
+
+func (h PaymentHandler) TransactionsList(ctx context.Context, userID int32) ([]models.Transaction, error) {
+	return h.PaymentRepo.GetBySenderID(ctx, userID)
+}

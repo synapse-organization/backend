@@ -11,7 +11,7 @@ type PublicHandler struct {
 }
 
 func (h PublicHandler) HealthCheck(c *gin.Context) {
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"message": "OK",
 	})
 }
@@ -20,17 +20,12 @@ func (h PublicHandler) GetCities(c *gin.Context) {
 	id := c.Query("id")
 	val, ok := models.Cities[cast.ToInt(id)]
 	if !ok {
-		c.JSON(400, gin.H{
-			"error": "invalid id",
-		})
-		return
-	}
-	if models.Cities[cast.ToInt(id)] == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "invalid id",
 		})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"cities": val,
 	})
