@@ -421,7 +421,7 @@ func (h Cafe) PrivateCafe(c *gin.Context) {
 		return
 	}
 
-	privateCafe, err := h.Handler.PrivateCafe(ctx, *cafe)
+	privateCafe, err := h.Handler.PublicCafeProfile(ctx, cafe.ID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
