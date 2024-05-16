@@ -12,30 +12,33 @@ type PaymentHandler struct {
 }
 
 func (h PaymentHandler) Transfer(ctx context.Context, userID int32, r *models.RequestTransfer) error {
-	return h.PaymentRepo.Create(ctx, &models.Transaction{
+	_, err := h.PaymentRepo.Create(ctx, &models.Transaction{
 		SenderID:   userID,
 		ReceiverID: r.To,
 		Amount:     r.Amount,
 		Type:       models.Transfer,
 	})
+	return err
 }
 
 func (h PaymentHandler) Deposit(ctx context.Context, userID int32, r *models.RequestDeposit) error {
-	return h.PaymentRepo.Create(ctx, &models.Transaction{
+	_, err := h.PaymentRepo.Create(ctx, &models.Transaction{
 		SenderID:   userID,
 		ReceiverID: userID,
 		Amount:     r.Amount,
 		Type:       models.Deposit,
 	})
+	return err
 }
 
 func (h PaymentHandler) Withdraw(ctx context.Context, userID int32, r *models.RequestWithdraw) error {
-	return h.PaymentRepo.Create(ctx, &models.Transaction{
+	_, err := h.PaymentRepo.Create(ctx, &models.Transaction{
 		SenderID:   userID,
 		ReceiverID: userID,
 		Amount:     r.Amount,
 		Type:       models.Withdraw,
 	})
+	return err
 }
 
 func (h PaymentHandler) Balance(ctx context.Context, userID int32) int64 {

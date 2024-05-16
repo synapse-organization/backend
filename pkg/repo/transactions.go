@@ -12,7 +12,7 @@ import (
 )
 
 type Transaction interface {
-	Create(ctx context.Context, transaction *models.Transaction) error
+	Create(ctx context.Context, transaction *models.Transaction) (transactionID string, e error)
 	GetByID(ctx context.Context, id string) (*models.Transaction, error)
 	GetBySenderID(ctx context.Context, senderID int32) ([]models.Transaction, error)
 	GetByReceiverID(ctx context.Context, receiverID int32) ([]models.Transaction, error)
@@ -24,7 +24,7 @@ type TransactionImp struct {
 	postgres *pgxpool.Pool
 }
 
-func NewTransactionImp(postgres *pgxpool.Pool) Transaction {
+func NewTransactionImp(postgres *pgxpool.Pool) *TransactionImp {
 	_, err := postgres.Exec(context.Background(),
 		`CREATE TABLE IF NOT EXISTS transactions (
 			id TEXT PRIMARY KEY,
@@ -43,7 +43,7 @@ func NewTransactionImp(postgres *pgxpool.Pool) Transaction {
 	return &TransactionImp{postgres: postgres}
 }
 
-func (t *TransactionImp) Create(ctx context.Context, transaction *models.Transaction) (e error) {
+func (t *TransactionImp) Create(ctx context.Context, transaction *models.Transaction) (transactionID string, e error) {
 	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	password := make([]byte, 12)
@@ -72,7 +72,7 @@ func (t *TransactionImp) Create(ctx context.Context, transaction *models.Transac
 	}
 
 	if senderBalance < transaction.Amount && transaction.Type != models.Deposit {
-		return errors.ErrNotEnoughBalance.Error()
+		return "", errors.ErrNotEnoughBalance.Error()
 	}
 
 	_, e = tx.Exec(ctx, "INSERT INTO transactions (id, sender_id, receiver_id, amount, description, transaction_type) VALUES ($1, $2, $3, $4, $5, $6)", transaction.ID, transaction.SenderID, transaction.ReceiverID, transaction.Amount, transaction.Description, transaction.Type)
@@ -81,19 +81,23 @@ func (t *TransactionImp) Create(ctx context.Context, transaction *models.Transac
 	}
 
 	// update sender balance
-	_, e = tx.Exec(ctx, "UPDATE users SET balance = balance - $1 WHERE id = $2", transaction.Amount, transaction.SenderID)
-	if e != nil {
-		return
+	if transaction.Type != models.Deposit {
+		_, e = tx.Exec(ctx, "UPDATE users SET balance = balance - $1 WHERE id = $2", transaction.Amount, transaction.SenderID)
+		if e != nil {
+			return
+		}
 	}
 
 	// update receiver balance
-	_, e = tx.Exec(ctx, "UPDATE users SET balance = balance + $1 WHERE id = $2", transaction.Amount, transaction.ReceiverID)
-	if e != nil {
-		return
+	if transaction.Type != models.Withdraw {
+		_, e = tx.Exec(ctx, "UPDATE users SET balance = balance + $1 WHERE id = $2", transaction.Amount, transaction.ReceiverID)
+		if e != nil {
+			return
+		}
 	}
 
 	e = tx.Commit(ctx)
-	return e
+	return transaction.ID, e
 }
 
 func (t *TransactionImp) GetByID(ctx context.Context, id string) (transaction *models.Transaction, e error) {

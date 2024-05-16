@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type TransactionType int
 
 const (
@@ -16,5 +18,5 @@ type Transaction struct {
 	Amount      int64           `json:"amount"`
 	Description string          `json:"description"`
 	Type        TransactionType `json:"transaction_type"`
-	CreatedAt   string          `json:"created_at"`
+	CreatedAt   time.Time       `json:"created_at"`
 }

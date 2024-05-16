@@ -89,12 +89,12 @@ func Run() {
 	imageRepo := repo.NewImageRepoImp(postgres)
 	ratingRepo := repo.NewRatingsRepoImp(postgres)
 	commentRepo := repo.NewCommentsRepoImp(postgres)
+	paymentRepo := repo.NewTransactionImp(postgres)
 	eventRepo := repo.NewEventRepoImp(postgres)
 	reservationRepo := repo.NewReservationRepoImp(postgres)
 	menuItemRepo := repo.NewMenuItemRepoImp(postgres)
-	paymentRepo := repo.NewTransactionImp(postgres)
 
-	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, CommentRepo: commentRepo, ImageRepo: imageRepo, EventRepo: eventRepo, UserRepo: userRepo, ReservationRepo: reservationRepo, MenuItemRepo: menuItemRepo}
+	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, CommentRepo: commentRepo, ImageRepo: imageRepo, EventRepo: eventRepo, UserRepo: userRepo, ReservationRepo: reservationRepo, MenuItemRepo: menuItemRepo, PaymentRepo: paymentRepo}
 	cafeHttpHandler := http.Cafe{Handler: &cafeHandler}
 
 	cafe := apiV1.Group("/cafe")
@@ -123,9 +123,9 @@ func Run() {
 	paymentHandler := modules.PaymentHandler{PaymentRepo: paymentRepo}
 	paymentHttpHandler := http.Payment{Handler: &paymentHandler}
 	payment := apiV1.Group("/payment")
-	payment.Handle(string(models.POST), "transfer", paymentHttpHandler.Transfer)
-	payment.Handle(string(models.POST), "deposit", paymentHttpHandler.Deposit)
-	payment.Handle(string(models.POST), "withdraw", paymentHttpHandler.Withdraw)
-	payment.Handle(string(models.GET), "balance", paymentHttpHandler.Balance)
+	payment.Handle(string(models.POST), "transfer", authMiddleware.IsAuthorized, paymentHttpHandler.Transfer)
+	payment.Handle(string(models.POST), "deposit", authMiddleware.IsAuthorized, paymentHttpHandler.Deposit)
+	payment.Handle(string(models.POST), "withdraw", authMiddleware.IsAuthorized, paymentHttpHandler.Withdraw)
+	payment.Handle(string(models.GET), "balance", authMiddleware.IsAuthorized, paymentHttpHandler.Balance)
 	service.Run(":8080")
 }

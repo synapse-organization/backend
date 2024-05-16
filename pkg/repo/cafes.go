@@ -15,22 +15,22 @@ func init() {
 	log.GetLog().Info("Init CafesRepo")
 }
 
-type UpdateType string
+type UpdateCafeType string
 
 const (
-	UpdateName        UpdateType = "name"
-	UpdateDescription UpdateType = "description"
-	UpdateOpeningTime UpdateType = "opening_time"
-	UpdateClosingTime UpdateType = "closing_time"
-	UpdateCapacity    UpdateType = "capacity"
-	UpdatePhoneNumber UpdateType = "phone_number"
-	UpdateEmail       UpdateType = "email"
-	UpdateLocation    UpdateType = "location"
-	UpdateProvince    UpdateType = "province"
-	UpdateCity        UpdateType = "city"
-	UpdateAddress     UpdateType = "address"
-	UpdateCategories  UpdateType = "categories"
-	UpdateAmenities   UpdateType = "amenities"
+	UpdateCafeName        UpdateCafeType = "name"
+	UpdateCafeDescription UpdateCafeType = "description"
+	UpdateCafeOpeningTime UpdateCafeType = "opening_time"
+	UpdateCafeClosingTime UpdateCafeType = "closing_time"
+	UpdateCafeCapacity    UpdateCafeType = "capacity"
+	UpdateCafePhoneNumber UpdateCafeType = "phone_number"
+	UpdateCafeEmail       UpdateCafeType = "email"
+	UpdateCafeLocation    UpdateCafeType = "location"
+	UpdateCafeProvince    UpdateCafeType = "province"
+	UpdateCafeCity        UpdateCafeType = "city"
+	UpdateCafeAddress     UpdateCafeType = "address"
+	UpdateCafeCategories  UpdateCafeType = "categories"
+	UpdateCafeAmenities   UpdateCafeType = "amenities"
 )
 
 type CafesRepo interface {
@@ -38,7 +38,7 @@ type CafesRepo interface {
 	GetByID(ctx context.Context, id int32) (*models.Cafe, error)
 	SearchCafe(ctx context.Context, name string, address string, location string, category string) ([]models.Cafe, error)
 	GetByCafeIDs(ctx context.Context, ids []int32) ([]models.Cafe, error)
-	Update(ctx context.Context, id int32, updateType UpdateType, value interface{}) error
+	Update(ctx context.Context, id int32, updateCafeType UpdateCafeType, value interface{}) error
 }
 
 type CafesRepoImp struct {
@@ -213,8 +213,8 @@ func (c *CafesRepoImp) GetByCafeIDs(ctx context.Context, ids []int32) ([]models.
 	return cafes, err
 }
 
-func (c *CafesRepoImp) Update(ctx context.Context, id int32, updateType UpdateType, value interface{}) error {
-	columnName := string(updateType)
+func (c *CafesRepoImp) Update(ctx context.Context, id int32, updateCafeType UpdateCafeType, value interface{}) error {
+	columnName := string(updateCafeType)
 	if columnName == "categories" {
 		categoriesVal := value.([]models.CafeCategory)
 		categories := ""

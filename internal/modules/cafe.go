@@ -26,6 +26,7 @@ type CafeHandler struct {
 	UserRepo        repo.UsersRepo
 	ReservationRepo repo.ReservationRepo
 	MenuItemRepo    repo.MenuItemsRepo
+	PaymentRepo     repo.Transaction
 }
 
 func (c CafeHandler) Create(ctx context.Context, cafe *models.Cafe) error {
@@ -267,6 +268,14 @@ func (c CafeHandler) CreateEvent(ctx context.Context, event models.Event) error 
 	if !utils.CheckEndTime(start_time, end_time) {
 		return errors.ErrEndTimeInvalid.Error()
 	}
+	
+	if !utils.CheckPriceValidity(event.Price) {
+		return errors.ErrPriceInvalid.Error()
+	}
+
+	if !utils.CheckCapacityValidity(event.Capacity) {
+		return errors.ErrCapacityInvalid.Error()
+	}
 
 	eventID := rand.Int31()
 	newEvent := &models.Event{
@@ -277,6 +286,10 @@ func (c CafeHandler) CreateEvent(ctx context.Context, event models.Event) error 
 		StartTime:   start_time,
 		EndTime:     end_time,
 		ImageID:     event.ImageID,
+		Price: event.Price,
+		Capacity: event.Capacity,
+		CurrentAttendees: 0,
+		Reservable: true,
 	}
 
 	if event.ImageID != "" {
@@ -484,7 +497,74 @@ func (c CafeHandler) Home(ctx context.Context) ([]models.Cafe, []*models.Comment
 }
 
 func (c CafeHandler) ReserveEvent(ctx context.Context, eventID int32, userID int32) error {
-	err := c.EventRepo.CreateEventForUser(ctx, userID, eventID)
+	event, err := c.EventRepo.GetEventByID(ctx, eventID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get event by id. error: %v", err)
+		return err
+	}
+
+	cafe, err := c.CafeRepo.GetByID(ctx, event.CafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe by id. error: %v", err)
+		return err
+	}
+
+	userEvents, err := c.EventRepo.GetEventsByUserID(ctx, userID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get event by user id. error: %v", err)
+		return err
+	}
+	
+	for _, event := range userEvents {
+		if event.ID == eventID {
+			return errors.ErrEventReserved.Error()
+		}
+	}
+
+	if !event.Reservable {
+		return errors.ErrEventUnreservable.Error()
+	}
+
+	event.CurrentAttendees++
+	if event.CurrentAttendees == event.Capacity {
+		event.Reservable = false
+		err = c.EventRepo.UpdateEvent(ctx, eventID, repo.UpdateEventReservability, false)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update event reservability by id. error: %v", err)
+			return err
+		}
+	}
+	err = c.EventRepo.UpdateEvent(ctx, eventID, repo.UpdateEventAttendees, event.CurrentAttendees)
+	if err != nil {
+		log.GetLog().Errorf("Unable to update event attendees by id. error: %v", err)
+		return err
+	}
+
+	defer func() {
+        if err != nil {
+            event.CurrentAttendees--
+            c.EventRepo.UpdateEvent(ctx, eventID, repo.UpdateEventAttendees, event.CurrentAttendees)
+            if !event.Reservable {
+                event.Reservable = true
+                c.EventRepo.UpdateEvent(ctx, eventID, repo.UpdateEventReservability, true)
+            }
+        }
+    }()
+
+	transactionID, err := c.PaymentRepo.Create(ctx, &models.Transaction{
+		SenderID: userID,
+		ReceiverID: cafe.OwnerID,
+		Amount: int64(event.Price),
+		Description: event.Description,
+		Type: 3,
+		CreatedAt: time.Now().UTC(),
+	})
+	if err != nil {
+		log.GetLog().Errorf("Unable to do transaction. error: %v", err)
+		return err
+	}
+
+	err = c.EventRepo.CreateEventForUser(ctx, userID, eventID, transactionID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create event for user. error: %v", err)
 		return err
@@ -584,7 +664,7 @@ func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) erro
 	}
 
 	if preCafe.Name != newCafe.Name {
-		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateName, newCafe.Name)
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCafeName, newCafe.Name)
 		if err != nil {
 			log.GetLog().Errorf("Unable to update cafes name. error: %v", err)
 			return err
@@ -592,7 +672,7 @@ func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) erro
 	}
 
 	if preCafe.Description != newCafe.Description {
-		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateDescription, newCafe.Description)
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCafeDescription, newCafe.Description)
 		if err != nil {
 			log.GetLog().Errorf("Unable to update cafes description. error: %v", err)
 			return err
@@ -604,7 +684,7 @@ func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) erro
 			errors.ErrStartTimeInvalid.Error()
 		}
 
-		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateOpeningTime, newCafe.OpeningTime)
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCafeOpeningTime, newCafe.OpeningTime)
 		if err != nil {
 			log.GetLog().Errorf("Unable to update cafes opening time. error: %v", err)
 			return err
@@ -616,7 +696,7 @@ func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) erro
 			errors.ErrEndTimeInvalid.Error()
 		}
 
-		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateClosingTime, newCafe.ClosingTime)
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCafeClosingTime, newCafe.ClosingTime)
 		if err != nil {
 			log.GetLog().Errorf("Unable to update cafes closing time. error: %v", err)
 			return err
@@ -628,7 +708,7 @@ func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) erro
 			return errors.ErrCapacityInvalid.Error()
 		}
 
-		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCapacity, newCafe.Capacity)
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCafeCapacity, newCafe.Capacity)
 		if err != nil {
 			log.GetLog().Errorf("Unable to update cafes capacity. error: %v", err)
 			return err
@@ -640,7 +720,7 @@ func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) erro
 			return errors.ErrPhoneInvalid.Error()
 		}
 
-		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdatePhoneNumber, newCafe.ContactInfo.Phone)
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCafePhoneNumber, newCafe.ContactInfo.Phone)
 		if err != nil {
 			log.GetLog().Errorf("Unable to update cafes phone number. error: %v", err)
 			return err
@@ -652,7 +732,7 @@ func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) erro
 			return errors.ErrEmailExists.Error()
 		}
 
-		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateEmail, newCafe.ContactInfo.Email)
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCafeEmail, newCafe.ContactInfo.Email)
 		if err != nil {
 			log.GetLog().Errorf("Unable to update cafes email. error: %v", err)
 			return err
@@ -660,7 +740,7 @@ func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) erro
 	}
 
 	if preCafe.ContactInfo.Province != newCafe.ContactInfo.Province {
-		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateProvince, newCafe.ContactInfo.Province)
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCafeProvince, newCafe.ContactInfo.Province)
 		if err != nil {
 			log.GetLog().Errorf("Unable to update cafes province. error: %v", err)
 			return err
@@ -668,7 +748,7 @@ func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) erro
 	}
 
 	if preCafe.ContactInfo.City != newCafe.ContactInfo.City {
-		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCity, newCafe.ContactInfo.City)
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCafeCity, newCafe.ContactInfo.City)
 		if err != nil {
 			log.GetLog().Errorf("Unable to update cafes city. error: %v", err)
 			return err
@@ -676,20 +756,20 @@ func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) erro
 	}
 
 	if preCafe.ContactInfo.Address != newCafe.ContactInfo.Address {
-		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateAddress, newCafe.ContactInfo.Address)
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCafeAddress, newCafe.ContactInfo.Address)
 		if err != nil {
 			log.GetLog().Errorf("Unable to update cafes address. error: %v", err)
 			return err
 		}
 	}
 
-	err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCategories, newCafe.Categories)
+	err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCafeCategories, newCafe.Categories)
 	if err != nil {
 		log.GetLog().Errorf("Unable to update cafes categories. error: %v", err)
 		return err
 	}
 
-	err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateAmenities, newCafe.Amenities)
+	err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCafeAmenities, newCafe.Amenities)
 	if err != nil {
 		log.GetLog().Errorf("Unable to update cafes amenities. error: %v", err)
 		return err
@@ -706,7 +786,7 @@ func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) erro
 	for _, imageID := range newCafe.AddedImages {
 		if imageID != "" {
 			err = c.ImageRepo.Create(ctx, &models.Image{
-				ID: imageID,
+				ID:        imageID,
 				Reference: newCafe.ID,
 			})
 			if err != nil {

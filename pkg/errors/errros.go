@@ -21,6 +21,9 @@ var (
 	ErrInternalError     = StringError{Msg: "خطای داخلی"}
 	ErrNotEnoughBalance  = StringError{Msg: "موجودی کافی نیست"}
 	ErrCapacityInvalid   = StringError{Msg: "ظرفیت وارد شده نامعتبر است"}
+	ErrPriceInvalid      = StringError{Msg: "مبلغ وارد شده نامعتبر است"}
+	ErrEventReserved     = StringError{Msg: "شما قبلا این رویداد را رزرو کرده اید"}
+	ErrEventUnreservable = StringError{Msg: "رویداد قابل رزرو نیست"}
 )
 
 type StringError struct {
