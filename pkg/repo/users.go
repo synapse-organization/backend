@@ -75,7 +75,7 @@ func (u *UserRepoImp) Verify(ctx context.Context, email string) error {
 
 func (u *UserRepoImp) GetByID(ctx context.Context, id int32) (*models.User, error) {
 	var user models.User
-	err := u.postgres.QueryRow(ctx, "SELECT id, first_name, last_name, email, password, phone, sex, user_role, balance FROM users WHERE id = $1", id).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex, &user.Role, &user.Balance)
+	err := u.postgres.QueryRow(ctx, "SELECT id, first_name, last_name, email, password, phone, sex, user_role, balance, extra_info->>'bank_account', extra_info->>'national_id' FROM users WHERE id = $1", id).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex, &user.Role, &user.Balance, &user.BankAccount, &user.NationalID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get user by id. error: %v", err)
 	}
