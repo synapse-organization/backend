@@ -140,7 +140,9 @@ func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID int32) (*Publ
 			return nil, err
 		}
 
-		cafe.Events[i].ImageID = images[0].ID
+		if images != nil {
+			cafe.Events[i].ImageID = images[0].ID
+		}
 	}
 
 	cafe.Rating, err = c.Rating.GetCafesRating(ctx, int32(cafeID))
@@ -440,16 +442,20 @@ func (c CafeHandler) EditMenuItem(ctx context.Context, newItem models.MenuItem) 
 	}
 
 	if newItem.ImageID != "" {
-		if newItem.ImageID == preItem.ImageID {
-			err := c.ImageRepo.DeleteByID(ctx, newItem.ImageID)
+		err := c.ImageRepo.DeleteByID(ctx, newItem.ImageID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to delete image by id. error: %v", err)
+			return err
+		}
+
+		if newItem.ImageID != preItem.ImageID {
+			imageID := string(rand.Int31())
+			err = c.ImageRepo.Create(ctx, &models.Image{
+				ID: imageID,
+				Reference: newItem.ID,
+			})
 			if err != nil {
-				log.GetLog().Errorf("Unable to delete image by id. error: %v", err)
-				return err
-			}
-		} else {
-			err = c.ImageRepo.UpdateByReferenceID(ctx, newItem.ID, newItem.ImageID)
-			if err != nil {
-				log.GetLog().Errorf("Unable to update menu items image. error: %v", err)
+				log.GetLog().Errorf("Unable to create image. error: %v", err)
 				return err
 			}
 		}
@@ -791,6 +797,86 @@ func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) erro
 			})
 			if err != nil {
 				log.GetLog().Errorf("Unable to add image by id. error: %v", err)
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+func (c CafeHandler) EditEvent(ctx context.Context, newEvent models.Event) error {
+	preEvent, err := c.EventRepo.GetEventByID(ctx, newEvent.ID)
+	if err != nil {
+		log.GetLog().Errorf("Incorrect event id. error: %v", err)
+		return err
+	}
+
+	images, err := c.ImageRepo.GetByReferenceID(ctx, newEvent.ID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get image by reference id. error: %v", err)
+		return err
+	}
+
+	if images != nil {
+		preEvent.ImageID = images[0].ID
+	}
+
+	newFields := []interface{}{newEvent.Name, newEvent.Description, newEvent.Price}
+	preFields := []interface{}{preEvent.Name, preEvent.Description, preEvent.Price}
+	updateFields := []repo.UpdateEventType{repo.UpdateEventName, repo.UpdateEventDescription, repo.UpdateEventPrice}
+
+	for i := range newFields {
+		if preFields[i] != newFields[i] {
+			err = c.EventRepo.UpdateEvent(ctx, newEvent.ID, updateFields[i], newFields[i])
+			if err != nil {
+				log.GetLog().Errorf("Unable to update event by id. error: %v", err)
+				return err
+			}
+		}
+	}
+
+	if preEvent.Capacity != newEvent.Capacity {
+		updateCapacity, updateReserve, err := utils.CheckReservability(preEvent.Reservable, newEvent.Reservable, preEvent.Capacity, newEvent.Capacity, preEvent.CurrentAttendees)
+		if err != nil {
+			log.GetLog().Errorf("Invalid new capacity. error: %v", err)
+			return err
+		}
+
+		if !updateCapacity {
+			err = c.EventRepo.UpdateEvent(ctx, newEvent.ID, repo.UpdateEventCapacity, newEvent.Capacity)
+			if err != nil {
+				log.GetLog().Errorf("Unable to update event by id. error: %v", err)
+				return err
+			}
+		}
+
+		if !updateReserve {
+			err = c.EventRepo.UpdateEvent(ctx, newEvent.ID, repo.UpdateEventReservability, !preEvent.Reservable)
+			if err != nil {
+				log.GetLog().Errorf("Unable to update event by id. error: %v", err)
+				return err
+			}
+		}
+	}
+
+	if preEvent.ImageID != newEvent.ImageID {
+		if preEvent.ImageID != "" {
+			err = c.ImageRepo.DeleteByID(ctx, preEvent.ImageID)
+			if err != nil {
+				log.GetLog().Errorf("Unable to delete image by id. error: %v", err)
+				return err
+			}
+		}
+
+		if newEvent.ImageID != "" {
+			eventID := string(rand.Int31())
+			err = c.ImageRepo.Create(ctx, &models.Image{
+				ID: eventID,
+				Reference: newEvent.ID,
+			})
+			if err != nil {
+				log.GetLog().Errorf("Unable to create image. error: %v", err)
 				return err
 			}
 		}

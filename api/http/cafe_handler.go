@@ -469,3 +469,39 @@ func (h Cafe) EditCafe(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	return
 }
+
+func (h Cafe) EditEvent(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var data models.Event
+
+	err := c.ShouldBindJSON(&data)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	err = h.Handler.EditEvent(ctx, data)
+	if err != nil {
+		log.GetLog().Errorf("Unable to edit event. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
