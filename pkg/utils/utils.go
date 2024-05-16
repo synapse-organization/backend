@@ -131,3 +131,27 @@ func CheckCapacityValidity(capacity int32) bool {
 func CheckPriceValidity(price float64) bool {
 	return price >= 0
 }
+
+func CheckReservability(preReserve bool, newReserve bool, preCapacity int32, newCapacity int32, attendees int32) (bool, bool, error) {
+	updateCapacity := false
+	updateReserve := false
+	if !preReserve {
+		if newCapacity > preCapacity {
+			updateCapacity = true
+			updateReserve = true
+		} else {
+			return updateCapacity, updateReserve, errors.ErrCapacityInvalid.Error()
+		}
+	} else {
+		if newCapacity < attendees {
+			return updateCapacity, updateReserve, errors.ErrCapacityInvalid.Error()
+		} else if newCapacity == attendees {
+			updateCapacity = true
+			updateReserve = true
+		} else {
+			updateCapacity = true
+		}
+	}
+	
+	return updateCapacity, updateReserve, nil
+}
