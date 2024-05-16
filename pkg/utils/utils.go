@@ -127,3 +127,7 @@ func CheckCafeTimeValidity(cafeTime int8) bool {
 func CheckCapacityValidity(capacity int32) bool {
 	return capacity > 0
 }
+
+func CheckPriceValidity(price float64) bool {
+	return price >= 0
+}
