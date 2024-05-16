@@ -124,14 +124,16 @@ func Run() {
 	paymentHttpHandler := http.Payment{Handler: &paymentHandler}
 	payment := apiV1.Group("/payment")
 	payment.Handle(string(models.POST), "transfer", authMiddleware.IsAuthorized, paymentHttpHandler.Transfer)
+	payment.Handle(string(models.GET), "transactions-list", authMiddleware.IsAuthorized, paymentHttpHandler.TransactionsList)
 	payment.Handle(string(models.POST), "deposit", authMiddleware.IsAuthorized, paymentHttpHandler.Deposit)
 	payment.Handle(string(models.POST), "withdraw", authMiddleware.IsAuthorized, paymentHttpHandler.Withdraw)
 	payment.Handle(string(models.GET), "balance", authMiddleware.IsAuthorized, paymentHttpHandler.Balance)
 
 	publicHandler := http.PublicHandler{}
 	public := apiV1.Group("/public")
-	public.Handle(string(models.GET), "health", publicHandler.HealthCheck)
 	public.StaticFile("/province", "./assets/ostan.json")
+	public.Handle(string(models.GET), "health", publicHandler.HealthCheck)
 	public.Handle(string(models.GET), "/cities", publicHandler.GetCities)
+
 	service.Run(":8080")
 }

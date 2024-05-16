@@ -119,3 +119,25 @@ func (h Payment) Balance(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"balance": balance})
 }
+
+func (h Payment) TransactionsList(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get token ID.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
+		return
+	}
+
+	transactions, err := h.Handler.TransactionsList(ctx, cast.ToInt32(userID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get transactions. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"transactions": transactions})
+
+}
