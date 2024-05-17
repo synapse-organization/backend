@@ -270,7 +270,7 @@ func (c CafeHandler) CreateEvent(ctx context.Context, event models.Event) error 
 	if !utils.CheckEndTime(start_time, end_time) {
 		return errors.ErrEndTimeInvalid.Error()
 	}
-	
+
 	if !utils.CheckPriceValidity(event.Price) {
 		return errors.ErrPriceInvalid.Error()
 	}
@@ -281,17 +281,17 @@ func (c CafeHandler) CreateEvent(ctx context.Context, event models.Event) error 
 
 	eventID := rand.Int31()
 	newEvent := &models.Event{
-		ID:          eventID,
-		CafeID:      event.CafeID,
-		Name:        event.Name,
-		Description: event.Description,
-		StartTime:   start_time,
-		EndTime:     end_time,
-		ImageID:     event.ImageID,
-		Price: event.Price,
-		Capacity: event.Capacity,
+		ID:               eventID,
+		CafeID:           event.CafeID,
+		Name:             event.Name,
+		Description:      event.Description,
+		StartTime:        start_time,
+		EndTime:          end_time,
+		ImageID:          event.ImageID,
+		Price:            event.Price,
+		Capacity:         event.Capacity,
 		CurrentAttendees: 0,
-		Reservable: true,
+		Reservable:       true,
 	}
 
 	if event.ImageID != "" {
@@ -451,7 +451,7 @@ func (c CafeHandler) EditMenuItem(ctx context.Context, newItem models.MenuItem) 
 		if newItem.ImageID != preItem.ImageID {
 			imageID := string(rand.Int31())
 			err = c.ImageRepo.Create(ctx, &models.Image{
-				ID: imageID,
+				ID:        imageID,
 				Reference: newItem.ID,
 			})
 			if err != nil {
@@ -520,7 +520,7 @@ func (c CafeHandler) ReserveEvent(ctx context.Context, eventID int32, userID int
 		log.GetLog().Errorf("Unable to get event by user id. error: %v", err)
 		return err
 	}
-	
+
 	for _, event := range userEvents {
 		if event.ID == eventID {
 			return errors.ErrEventReserved.Error()
@@ -547,23 +547,23 @@ func (c CafeHandler) ReserveEvent(ctx context.Context, eventID int32, userID int
 	}
 
 	defer func() {
-        if err != nil {
-            event.CurrentAttendees--
-            c.EventRepo.UpdateEvent(ctx, eventID, repo.UpdateEventAttendees, event.CurrentAttendees)
-            if !event.Reservable {
-                event.Reservable = true
-                c.EventRepo.UpdateEvent(ctx, eventID, repo.UpdateEventReservability, true)
-            }
-        }
-    }()
+		if err != nil {
+			event.CurrentAttendees--
+			c.EventRepo.UpdateEvent(ctx, eventID, repo.UpdateEventAttendees, event.CurrentAttendees)
+			if !event.Reservable {
+				event.Reservable = true
+				c.EventRepo.UpdateEvent(ctx, eventID, repo.UpdateEventReservability, true)
+			}
+		}
+	}()
 
 	transactionID, err := c.PaymentRepo.Create(ctx, &models.Transaction{
-		SenderID: userID,
-		ReceiverID: cafe.OwnerID,
-		Amount: int64(event.Price),
+		SenderID:    userID,
+		ReceiverID:  cafe.OwnerID,
+		Amount:      int64(event.Price),
 		Description: event.Description,
-		Type: 3,
-		CreatedAt: time.Now().UTC(),
+		Type:        3,
+		CreatedAt:   time.Now().UTC(),
 	})
 	if err != nil {
 		log.GetLog().Errorf("Unable to do transaction. error: %v", err)
@@ -665,6 +665,7 @@ func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) erro
 		return err
 	}
 
+	preCafe.Images = make([]string, len(images))
 	for i, image := range images {
 		preCafe.Images[i] = image.ID
 	}
@@ -872,7 +873,7 @@ func (c CafeHandler) EditEvent(ctx context.Context, newEvent models.Event) error
 		if newEvent.ImageID != "" {
 			eventID := string(rand.Int31())
 			err = c.ImageRepo.Create(ctx, &models.Image{
-				ID: eventID,
+				ID:        eventID,
 				Reference: newEvent.ID,
 			})
 			if err != nil {
