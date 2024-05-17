@@ -382,14 +382,6 @@ func (h Cafe) PrivateCafe(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
-	cafeID := c.Query("cafe_id")
-	cafe_id, err := strconv.Atoi(cafeID)
-	if err != nil {
-		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
-		return
-	}
-
 	role, exists := c.Get("role")
 	if !exists {
 		log.GetLog().Errorf("Unable to get user role")
@@ -409,21 +401,16 @@ func (h Cafe) PrivateCafe(c *gin.Context) {
 		return
 	}
 
-	cafe, err := h.Handler.CafeRepo.GetByID(ctx, int32(cafe_id))
+	cafe, err := h.Handler.CafeRepo.GetByOwnerID(ctx, userID.(int32))
 	if err != nil {
-		log.GetLog().Errorf("Unable to get user by id. error: %v", err)
+		log.GetLog().Errorf("Unable to get cafe by id. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error().Error()})
-		return
-	}
-
-	if cafe.OwnerID != userID {
-		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
 		return
 	}
 
 	privateCafe, err := h.Handler.PublicCafeProfile(ctx, cafe.ID)
 	if err != nil {
-		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
+		log.GetLog().Errorf("Unable to get private cafe profile. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
