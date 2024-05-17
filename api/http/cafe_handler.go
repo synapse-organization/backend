@@ -7,6 +7,7 @@ import (
 	"barista/pkg/models"
 	"context"
 	"fmt"
+	"github.com/spf13/cast"
 	"net/http"
 	"strconv"
 
@@ -28,6 +29,15 @@ func (h Cafe) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get token ID.")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	req.OwnerID = cast.ToInt32(userID)
 
 	err = h.Handler.Create(ctx, &req)
 	if err != nil {
