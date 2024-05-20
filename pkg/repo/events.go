@@ -28,6 +28,7 @@ type EventRepo interface {
 	GetEventsByCafeID(ctx context.Context, cafeID int32) ([]*models.Event, error)
 	GetEventsByUserID(ctx context.Context, userID int32) ([]*models.Event, error)
 	UpdateEvent(ctx context.Context, id int32, updateEventType UpdateEventType, value interface{}) error
+	DeleteByID(ctx context.Context, id int32) error
 }
 
 type EventRepoImp struct {
@@ -145,4 +146,16 @@ func (c *EventRepoImp) UpdateEvent(ctx context.Context, id int32, updateEventTyp
 	}
 
 	return nil
+}
+
+func (c *EventRepoImp) DeleteByID(ctx context.Context, id int32) error {
+	_, err := c.postgres.Exec(ctx,
+		`DELETE FROM events
+		WHERE id = $1`, id)
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete event. error: %v", err)
+		return err
+	}
+
+	return err
 }

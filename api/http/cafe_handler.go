@@ -335,7 +335,7 @@ func (h Cafe) DeleteMenuItem(c *gin.Context) {
 
 	err = h.Handler.DeleteMenuItem(ctx, int32(itemID))
 	if err != nil {
-		log.GetLog().Errorf("Unable to edit menu item. error: %v", err)
+		log.GetLog().Errorf("Unable to delete menu item. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -495,6 +495,41 @@ func (h Cafe) EditEvent(c *gin.Context) {
 	err = h.Handler.EditEvent(ctx, data)
 	if err != nil {
 		log.GetLog().Errorf("Unable to edit event. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
+
+func (h Cafe) DeleteEvent(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	event_id := c.Query("id")
+	eventID, err := strconv.Atoi(event_id)
+	if err != nil {
+		log.GetLog().Errorf("Invalid event id. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	err = h.Handler.DeleteEvent(ctx, int32(eventID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete event. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

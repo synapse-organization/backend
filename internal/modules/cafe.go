@@ -885,3 +885,19 @@ func (c CafeHandler) EditEvent(ctx context.Context, newEvent models.Event) error
 
 	return err
 }
+
+func (c CafeHandler) DeleteEvent(ctx context.Context, eventID int32) error {
+	err := c.EventRepo.DeleteByID(ctx, eventID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete event by id. error: %v", err)
+		return err
+	}
+
+	err = c.ImageRepo.DeleteByReferenceID(ctx, eventID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete image by reference id. error: %v", err)
+		return err
+	}
+
+	return err
+}
