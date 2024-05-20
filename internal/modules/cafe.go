@@ -179,8 +179,8 @@ func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID int32) (*Publ
 		ContactInfo:  cafe.ContactInfo,
 		Categories:   cafe.Categories,
 		Amenities:    cafe.Amenities,
-		ProvinceName: models.Provinces[provinceNum+1].Name,
-		CityName:     models.Cities[provinceNum][cityNum+1].Name,
+		ProvinceName: models.Provinces[provinceNum-1].Name,
+		CityName:     models.Cities[cityNum-1].Name,
 	}
 
 	return &publicCafe, nil
