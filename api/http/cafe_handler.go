@@ -7,9 +7,11 @@ import (
 	"barista/pkg/models"
 	"context"
 	"fmt"
-	"github.com/spf13/cast"
 	"net/http"
 	"strconv"
+	"time"
+
+	"github.com/spf13/cast"
 
 	"github.com/gin-gonic/gin"
 )
@@ -530,6 +532,120 @@ func (h Cafe) DeleteEvent(c *gin.Context) {
 	err = h.Handler.DeleteEvent(ctx, int32(eventID))
 	if err != nil {
 		log.GetLog().Errorf("Unable to delete event. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
+
+func (h Cafe) GetFullyBookedDays(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	cafeID, err := strconv.Atoi(c.Query("cafe_id"))
+	if err != nil {
+		log.GetLog().Errorf("Unable to convert cafe id. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid cafe_id"})
+		return
+	}
+
+	startDate := time.Now()
+
+	days, err := h.Handler.GetFullyBookedDays(ctx, int32(cafeID), startDate)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get fully booked days. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"fully_booked_days": days})
+	return
+}
+
+func (h Cafe) GetTimeSlots(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	cafeID, err := strconv.Atoi(c.Query("cafe_id"))
+	if err != nil {
+		log.GetLog().Errorf("Unable to convert cafe id. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid cafe_id"})
+		return
+	}
+
+	dayStr := c.Query("day")
+	day, err := time.Parse("2006-01-02", dayStr)
+	if err != nil {
+		log.GetLog().Errorf("Unable to parse day. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid day format"})
+		return
+	}
+
+	slots, err := h.Handler.GetAvailableTimeSlots(ctx, int32(cafeID), day)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get available time slots. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"time_slots": slots})
+	return
+}
+
+type RequestReserveCafe struct {
+	CafeID    int32  `json:"cafe_id"`
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+	People    int32  `json:"people"`
+}
+
+func (h Cafe) ReserveCafe(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req RequestReserveCafe
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind JSON")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Error("Unable to get userID from context")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	startTime, err := time.Parse(time.RFC3339, req.StartTime)
+	if err != nil {
+		log.GetLog().Errorf("Unable to parse start time. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start_time format"})
+		return
+	}
+
+	endTime, err := time.Parse(time.RFC3339, req.EndTime)
+	if err != nil {
+		log.GetLog().Errorf("Unable to parse end time. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end_time format"})
+		return
+	}
+
+	reservation := models.Reservation{
+		UserID:    cast.ToInt32(userID),
+		CafeID:    req.CafeID,
+		StartTime: startTime,
+		EndTime:   endTime,
+		People:    req.People,
+	}
+
+	err = h.Handler.ReserveCafe(ctx, &reservation)
+	if err != nil {
+		log.GetLog().Errorf("Unable to reserve cafe. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
