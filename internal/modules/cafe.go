@@ -531,32 +531,6 @@ func (c CafeHandler) ReserveEvent(ctx context.Context, eventID int32, userID int
 		return errors.ErrEventUnreservable.Error()
 	}
 
-	event.CurrentAttendees++
-	if event.CurrentAttendees == event.Capacity {
-		event.Reservable = false
-		err = c.EventRepo.UpdateEvent(ctx, eventID, repo.UpdateEventReservability, false)
-		if err != nil {
-			log.GetLog().Errorf("Unable to update event reservability by id. error: %v", err)
-			return err
-		}
-	}
-	err = c.EventRepo.UpdateEvent(ctx, eventID, repo.UpdateEventAttendees, event.CurrentAttendees)
-	if err != nil {
-		log.GetLog().Errorf("Unable to update event attendees by id. error: %v", err)
-		return err
-	}
-
-	defer func() {
-		if err != nil {
-			event.CurrentAttendees--
-			c.EventRepo.UpdateEvent(ctx, eventID, repo.UpdateEventAttendees, event.CurrentAttendees)
-			if !event.Reservable {
-				event.Reservable = true
-				c.EventRepo.UpdateEvent(ctx, eventID, repo.UpdateEventReservability, true)
-			}
-		}
-	}()
-
 	transactionID, err := c.PaymentRepo.Create(ctx, &models.Transaction{
 		SenderID:    userID,
 		ReceiverID:  cafe.OwnerID,
@@ -573,6 +547,21 @@ func (c CafeHandler) ReserveEvent(ctx context.Context, eventID int32, userID int
 	err = c.EventRepo.CreateEventForUser(ctx, userID, eventID, transactionID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create event for user. error: %v", err)
+		return err
+	}
+
+	event.CurrentAttendees++
+	if event.CurrentAttendees == event.Capacity {
+		event.Reservable = false
+		err = c.EventRepo.UpdateEvent(ctx, eventID, repo.UpdateEventReservability, false)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update event reservability by id. error: %v", err)
+			return err
+		}
+	}
+	err = c.EventRepo.UpdateEvent(ctx, eventID, repo.UpdateEventAttendees, event.CurrentAttendees)
+	if err != nil {
+		log.GetLog().Errorf("Unable to update event attendees by id. error: %v", err)
 		return err
 	}
 
@@ -900,4 +889,59 @@ func (c CafeHandler) DeleteEvent(ctx context.Context, eventID int32) error {
 	}
 
 	return err
+}
+
+func (c CafeHandler) GetFullyBookedDays(ctx context.Context, cafeID int32, startDate time.Time) ([]time.Time, error) {
+	return c.ReservationRepo.GetFullyBookedDays(ctx, cafeID, startDate)
+}
+
+func (c CafeHandler) GetAvailableTimeSlots(ctx context.Context, cafeID int32, day time.Time) ([]map[string]interface{}, error) {
+	cafe, err := c.CafeRepo.GetByID(ctx, cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe. error: %v", err)
+		return nil, err
+	}
+
+	return c.ReservationRepo.GetAvailableTimeSlots(ctx, cafeID, day, cafe.Capacity)
+}
+
+func (c CafeHandler) ReserveCafe(ctx context.Context, reservation *models.Reservation) error {
+	totalPeople, err := c.ReservationRepo.CountByTime(ctx, reservation.CafeID, reservation.StartTime, reservation.EndTime)
+	if err != nil {
+		log.GetLog().Errorf("Unable to check availability. error: %v", err)
+		return err
+	}
+
+	cafe, err := c.CafeRepo.GetByID(ctx, reservation.CafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe. error: %v", err)
+		return err
+	}
+
+	if totalPeople+reservation.People > cafe.Capacity {
+		log.GetLog().Errorf("time slot is fully booked")
+		return fmt.Errorf("time slot is fully booked")
+	}
+
+	transactionID, err := c.PaymentRepo.Create(ctx, &models.Transaction{
+		SenderID:    reservation.UserID,
+		ReceiverID:  cafe.OwnerID,
+		Amount:      int64(cafe.ReservationPrice * float64(reservation.People)),
+		Description: "cafe reservation transaction",
+		Type:        3,
+		CreatedAt:   time.Now().UTC(),
+	})
+	if err != nil {
+		log.GetLog().Errorf("Unable to do transaction. error: %v", err)
+		return err
+	}
+
+	reservation.TransactionID = transactionID
+	err = c.ReservationRepo.Create(ctx, reservation)
+	if err != nil {
+		log.GetLog().Errorf("Unable to create reservation. error: %v", err)
+		return err
+	}
+
+	return nil
 }

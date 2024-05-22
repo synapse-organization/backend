@@ -18,19 +18,20 @@ func init() {
 type UpdateCafeType string
 
 const (
-	UpdateCafeName        UpdateCafeType = "name"
-	UpdateCafeDescription UpdateCafeType = "description"
-	UpdateCafeOpeningTime UpdateCafeType = "opening_time"
-	UpdateCafeClosingTime UpdateCafeType = "closing_time"
-	UpdateCafeCapacity    UpdateCafeType = "capacity"
-	UpdateCafePhoneNumber UpdateCafeType = "phone_number"
-	UpdateCafeEmail       UpdateCafeType = "email"
-	UpdateCafeLocation    UpdateCafeType = "location"
-	UpdateCafeProvince    UpdateCafeType = "province"
-	UpdateCafeCity        UpdateCafeType = "city"
-	UpdateCafeAddress     UpdateCafeType = "address"
-	UpdateCafeCategories  UpdateCafeType = "categories"
-	UpdateCafeAmenities   UpdateCafeType = "amenities"
+	UpdateCafeName             UpdateCafeType = "name"
+	UpdateCafeDescription      UpdateCafeType = "description"
+	UpdateCafeOpeningTime      UpdateCafeType = "opening_time"
+	UpdateCafeClosingTime      UpdateCafeType = "closing_time"
+	UpdateCafeCapacity         UpdateCafeType = "capacity"
+	UpdateCafePhoneNumber      UpdateCafeType = "phone_number"
+	UpdateCafeEmail            UpdateCafeType = "email"
+	UpdateCafeLocation         UpdateCafeType = "location"
+	UpdateCafeProvince         UpdateCafeType = "province"
+	UpdateCafeCity             UpdateCafeType = "city"
+	UpdateCafeAddress          UpdateCafeType = "address"
+	UpdateCafeCategories       UpdateCafeType = "categories"
+	UpdateCafeAmenities        UpdateCafeType = "amenities"
+	UpdateCafeReservationPrice UpdateCafeType = "reservation_price"
 )
 
 type CafesRepo interface {
@@ -64,6 +65,7 @@ func NewCafeRepoImp(postgres *pgxpool.Pool) *CafesRepoImp {
 				address TEXT,
 				categories TEXT,
 				amenities TEXT,
+				reservation_price FLOAT,
 				FOREIGN KEY (owner_id) REFERENCES users(id)
 			);`)
 
@@ -100,7 +102,7 @@ func (c *CafesRepoImp) Create(ctx context.Context, cafe *models.Cafe) (int32, er
 		}
 	}
 
-	_, err := c.postgres.Exec(ctx, "INSERT INTO cafes (id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories, amenities) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)", cafe.ID, cafe.OwnerID, cafe.Name, cafe.Description, cafe.OpeningTime, cafe.ClosingTime, cafe.Capacity, cafe.ContactInfo.Phone, cafe.ContactInfo.Email, cafe.ContactInfo.Province, cafe.ContactInfo.City, cafe.ContactInfo.Address, cafe.ContactInfo.Location, categories, amenities)
+	_, err := c.postgres.Exec(ctx, "INSERT INTO cafes (id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories, amenities, reservation_price) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)", cafe.ID, cafe.OwnerID, cafe.Name, cafe.Description, cafe.OpeningTime, cafe.ClosingTime, cafe.Capacity, cafe.ContactInfo.Phone, cafe.ContactInfo.Email, cafe.ContactInfo.Province, cafe.ContactInfo.City, cafe.ContactInfo.Address, cafe.ContactInfo.Location, categories, amenities, cafe.ReservationPrice)
 	if err != nil {
 		log.GetLog().Errorf("Unable to insert cafe. error: %v", err)
 	}
@@ -111,7 +113,7 @@ func (c *CafesRepoImp) GetByID(ctx context.Context, id int32) (*models.Cafe, err
 	var cafe models.Cafe
 	categories := ""
 	amenities := ""
-	err := c.postgres.QueryRow(ctx, "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories, amenities FROM cafes WHERE id = $1", id).Scan(&cafe.ID, &cafe.OwnerID, &cafe.Name, &cafe.Description, &cafe.OpeningTime, &cafe.ClosingTime, &cafe.Capacity, &cafe.ContactInfo.Phone, &cafe.ContactInfo.Email, &cafe.ContactInfo.Province, &cafe.ContactInfo.City, &cafe.ContactInfo.Address, &cafe.ContactInfo.Location, &categories, &amenities)
+	err := c.postgres.QueryRow(ctx, "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories, amenities, reservation_price FROM cafes WHERE id = $1", id).Scan(&cafe.ID, &cafe.OwnerID, &cafe.Name, &cafe.Description, &cafe.OpeningTime, &cafe.ClosingTime, &cafe.Capacity, &cafe.ContactInfo.Phone, &cafe.ContactInfo.Email, &cafe.ContactInfo.Province, &cafe.ContactInfo.City, &cafe.ContactInfo.Address, &cafe.ContactInfo.Location, &categories, &amenities, &cafe.ReservationPrice)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get cafe by id. error: %v", err)
 	}
@@ -130,7 +132,7 @@ func (c *CafesRepoImp) GetByID(ctx context.Context, id int32) (*models.Cafe, err
 func (c *CafesRepoImp) SearchCafe(ctx context.Context, name string, province string, city string, category string) ([]models.Cafe, error) {
 	var cafes []models.Cafe
 	list := []string{}
-	query := "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories, amenities FROM cafes"
+	query := "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories, amenities, reservation_price FROM cafes"
 
 	if name != "" {
 		list = append(list, "name LIKE '%"+name+"%'")
@@ -159,7 +161,7 @@ func (c *CafesRepoImp) SearchCafe(ctx context.Context, name string, province str
 		var cafe models.Cafe
 		categories := ""
 		amenities := ""
-		err = rows.Scan(&cafe.ID, &cafe.OwnerID, &cafe.Name, &cafe.Description, &cafe.OpeningTime, &cafe.ClosingTime, &cafe.Capacity, &cafe.ContactInfo.Phone, &cafe.ContactInfo.Email, &cafe.ContactInfo.Province, &cafe.ContactInfo.City, &cafe.ContactInfo.Address, &cafe.ContactInfo.Location, &categories, &amenities)
+		err = rows.Scan(&cafe.ID, &cafe.OwnerID, &cafe.Name, &cafe.Description, &cafe.OpeningTime, &cafe.ClosingTime, &cafe.Capacity, &cafe.ContactInfo.Phone, &cafe.ContactInfo.Email, &cafe.ContactInfo.Province, &cafe.ContactInfo.City, &cafe.ContactInfo.Address, &cafe.ContactInfo.Location, &categories, &amenities, &cafe.ReservationPrice)
 		if err != nil {
 			log.GetLog().Errorf("Unable to scan cafe. error: %v", err)
 		}
@@ -189,7 +191,7 @@ func (c *CafesRepoImp) GetByCafeIDs(ctx context.Context, ids []int32) ([]models.
 		listIds = append(listIds, cast.ToString(id))
 	}
 
-	query := "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories FROM cafes WHERE id IN ("
+	query := "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories, amenities, reservation_price FROM cafes WHERE id IN ("
 	query += strings.Join(listIds, ",")
 	query += ")"
 
@@ -201,13 +203,20 @@ func (c *CafesRepoImp) GetByCafeIDs(ctx context.Context, ids []int32) ([]models.
 	for rows.Next() {
 		var cafe models.Cafe
 		catetories := ""
-		err = rows.Scan(&cafe.ID, &cafe.OwnerID, &cafe.Name, &cafe.Description, &cafe.OpeningTime, &cafe.ClosingTime, &cafe.Capacity, &cafe.ContactInfo.Phone, &cafe.ContactInfo.Email, &cafe.ContactInfo.Province, &cafe.ContactInfo.City, &cafe.ContactInfo.Address, &cafe.ContactInfo.Location, &catetories)
+		amenities := ""
+		err = rows.Scan(&cafe.ID, &cafe.OwnerID, &cafe.Name, &cafe.Description, &cafe.OpeningTime, &cafe.ClosingTime, &cafe.Capacity, &cafe.ContactInfo.Phone, &cafe.ContactInfo.Email, &cafe.ContactInfo.Province, &cafe.ContactInfo.City, &cafe.ContactInfo.Address, &cafe.ContactInfo.Location, &catetories, &amenities, &cafe.ReservationPrice)
 		if err != nil {
 			log.GetLog().Errorf("Unable to scan cafe. error: %v", err)
 		}
+
 		for _, category := range strings.Split(catetories, ",") {
 			cafe.Categories = append(cafe.Categories, models.CafeCategory(strings.TrimSpace(category)))
 		}
+
+		for _, amenity := range strings.Split(amenities, ",") {
+			cafe.Amenities = append(cafe.Amenities, models.AmenityCategory(strings.TrimSpace(amenity)))
+		}
+
 		cafes = append(cafes, cafe)
 	}
 
@@ -218,7 +227,7 @@ func (c *CafesRepoImp) GetByOwnerID(ctx context.Context, id int32) (*models.Cafe
 	var cafe models.Cafe
 	categories := ""
 	amenities := ""
-	err := c.postgres.QueryRow(ctx, "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories, amenities FROM cafes WHERE owner_id = $1", id).Scan(&cafe.ID, &cafe.OwnerID, &cafe.Name, &cafe.Description, &cafe.OpeningTime, &cafe.ClosingTime, &cafe.Capacity, &cafe.ContactInfo.Phone, &cafe.ContactInfo.Email, &cafe.ContactInfo.Province, &cafe.ContactInfo.City, &cafe.ContactInfo.Address, &cafe.ContactInfo.Location, &categories, &amenities)
+	err := c.postgres.QueryRow(ctx, `SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories, amenities, reservation_price FROM cafes WHERE owner_id = $1`, id).Scan(&cafe.ID, &cafe.OwnerID, &cafe.Name, &cafe.Description, &cafe.OpeningTime, &cafe.ClosingTime, &cafe.Capacity, &cafe.ContactInfo.Phone, &cafe.ContactInfo.Email, &cafe.ContactInfo.Province, &cafe.ContactInfo.City, &cafe.ContactInfo.Address, &cafe.ContactInfo.Location, &categories, &amenities, &cafe.ReservationPrice)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get cafe by owner id. error: %v", err)
 	}
@@ -270,10 +279,10 @@ func (c *CafesRepoImp) Update(ctx context.Context, id int32, updateCafeType Upda
 
 func (c *CafesRepoImp) DeleteByID(ctx context.Context, id int32) error {
 	_, err := c.postgres.Exec(ctx,
-		`DELETE FROM menu_items
+		`DELETE FROM cafes
 		WHERE id = $1`, id)
 	if err != nil {
-		log.GetLog().Errorf("Unable to delete menu item. error: %v", err)
+		log.GetLog().Errorf("Unable to delete cafe. error: %v", err)
 		return err
 	}
 
