@@ -55,7 +55,7 @@ func NewEventRepoImp(postgres *pgxpool.Pool) *EventRepoImp {
 	}
 
 	_, err = postgres.Exec(context.Background(),
-		`CREATE TABLE IF NOT EXISTS event_participants (
+		`CREATE TABLE IF NOT EXISTS event_reservations (
     				event_id INTEGER,
     				user_id INTEGER,
 					transaction_id TEXT,
@@ -64,7 +64,7 @@ func NewEventRepoImp(postgres *pgxpool.Pool) *EventRepoImp {
 					FOREIGN KEY (transaction_id) REFERENCES transactions(id)
     			);`)
 	if err != nil {
-		log.GetLog().WithError(err).WithField("table", "event_participants").Fatal("Unable to create table")
+		log.GetLog().WithError(err).WithField("table", "event_reservations").Fatal("Unable to create table")
 	}
 
 	return &EventRepoImp{postgres: postgres}
@@ -79,7 +79,7 @@ func (e *EventRepoImp) CreateEventForCafe(ctx context.Context, event *models.Eve
 }
 
 func (e *EventRepoImp) CreateEventForUser(ctx context.Context, userID int32, eventID int32, transactionID string) error {
-	_, err := e.postgres.Exec(ctx, "INSERT INTO event_participants (event_id, user_id, transaction_id) VALUES ($1, $2, $3)", eventID, userID, transactionID)
+	_, err := e.postgres.Exec(ctx, "INSERT INTO event_reservations (event_id, user_id, transaction_id) VALUES ($1, $2, $3)", eventID, userID, transactionID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to insert event participant. error: %v", err)
 	}
@@ -116,7 +116,7 @@ func (e *EventRepoImp) GetEventsByCafeID(ctx context.Context, cafeID int32) ([]*
 }
 
 func (e *EventRepoImp) GetEventsByUserID(ctx context.Context, userID int32) ([]*models.Event, error) {
-	rows, err := e.postgres.Query(ctx, "SELECT e.id, e.cafe_id, e.name, e.description, e.start_time, e.end_time, e.price, e.capacity, e.current_attendees, e.reservable FROM events e JOIN event_participants ep ON e.id = ep.event_id WHERE ep.user_id = $1", userID)
+	rows, err := e.postgres.Query(ctx, "SELECT e.id, e.cafe_id, e.name, e.description, e.start_time, e.end_time, e.price, e.capacity, e.current_attendees, e.reservable FROM events e JOIN event_reservations ep ON e.id = ep.event_id WHERE ep.user_id = $1", userID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get events by user id. error: %v", err)
 	}
