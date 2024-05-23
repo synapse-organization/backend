@@ -8,6 +8,7 @@ import (
 	"barista/pkg/utils"
 	"context"
 	"fmt"
+	"github.com/redis/go-redis/v9"
 	"math/rand"
 	"strconv"
 	"time"
@@ -27,6 +28,8 @@ type CafeHandler struct {
 	ReservationRepo repo.ReservationRepo
 	MenuItemRepo    repo.MenuItemsRepo
 	PaymentRepo     repo.Transaction
+	LocationsRepo   repo.LocationsRepo
+	Redis           *redis.Client
 }
 
 func (c CafeHandler) Create(ctx context.Context, cafe *models.Cafe) error {
@@ -944,4 +947,22 @@ func (c CafeHandler) ReserveCafe(ctx context.Context, reservation *models.Reserv
 	}
 
 	return nil
+}
+
+func (c CafeHandler) GetNearestCafes(ctx context.Context, lat float64, long float64, radius float64) ([]redis.GeoLocation, error) {
+
+	return c.Redis.GeoRadius(ctx, "locations", lat, long, &redis.GeoRadiusQuery{
+		Radius:      radius,
+		Unit:        "km",
+		WithCoord:   true,
+		WithDist:    true,
+		WithGeoHash: true,
+		Count:       5,
+		Sort:        "ASC",
+	}).Result()
+
+}
+
+func (c CafeHandler) SetCafeLocation(ctx context.Context, m *models.Location) error {
+	return c.LocationsRepo.SetLocation(ctx, m)
 }

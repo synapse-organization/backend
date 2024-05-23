@@ -3,13 +3,17 @@ package internal
 import (
 	"barista/api/http"
 	"barista/internal/modules"
+	"barista/pkg/log"
 	"barista/pkg/middlewares"
 	"barista/pkg/models"
 	"barista/pkg/repo"
 	"barista/pkg/utils"
+	"context"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cast"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"os"
+	"time"
 )
 
 func getPostgres() (string, int) {
@@ -40,6 +44,20 @@ func getMongo() (string, int) {
 	return address, cast.ToInt(port)
 }
 
+func getRedis() (string, int) {
+	address, ok := os.LookupEnv("redis_address")
+	if !ok {
+		return "localhost", 6379
+	}
+
+	port, ok := os.LookupEnv("redis_port")
+	if !ok {
+		return "localhost", 6379
+	}
+
+	return address, cast.ToInt(port)
+}
+
 func Run() {
 	address, port := getPostgres()
 	postgres := utils.NewPostgres(
@@ -62,6 +80,13 @@ func Run() {
 		},
 	)
 	mongoDbOpt := options.GridFSBucket().SetName("image-server")
+
+	address, port = getRedis()
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     address + ":" + cast.ToString(port),
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
 
 	authMiddleware := middlewares.AuthMiddleware{Postgres: postgres}
 
@@ -93,9 +118,47 @@ func Run() {
 	eventRepo := repo.NewEventRepoImp(postgres)
 	reservationRepo := repo.NewReservationRepoImp(postgres)
 	menuItemRepo := repo.NewMenuItemRepoImp(postgres)
+	locationRepo := repo.NewLocationsRepoImp(postgres)
 
-	cafeHandler := modules.CafeHandler{CafeRepo: cafeRepo, Rating: ratingRepo, CommentRepo: commentRepo, ImageRepo: imageRepo, EventRepo: eventRepo, UserRepo: userRepo, ReservationRepo: reservationRepo, MenuItemRepo: menuItemRepo, PaymentRepo: paymentRepo}
+	cafeHandler := modules.CafeHandler{
+		CafeRepo:        cafeRepo,
+		Rating:          ratingRepo,
+		CommentRepo:     commentRepo,
+		ImageRepo:       imageRepo,
+		EventRepo:       eventRepo,
+		UserRepo:        userRepo,
+		ReservationRepo: reservationRepo,
+		MenuItemRepo:    menuItemRepo,
+		PaymentRepo:     paymentRepo,
+		Redis:           rdb,
+	}
 	cafeHttpHandler := http.Cafe{Handler: &cafeHandler}
+
+	newTicker := time.NewTicker(1 * time.Minute)
+	go func() {
+		for {
+			select {
+			case <-newTicker.C:
+				if err := rdb.FlushDB(context.Background()).Err(); err != nil {
+					log.GetLog().Errorf("Unable to flush redis db. error: %v", err)
+				}
+				locations, err := locationRepo.FindAll(context.Background())
+				if err != nil {
+					log.GetLog().Errorf("Unable to get locations. error: %v", err)
+				}
+
+				for _, location := range locations {
+					if err := rdb.GeoAdd(context.Background(), "locations", &redis.GeoLocation{
+						Name:      cast.ToString(location.CafeID),
+						Longitude: location.Lng,
+						Latitude:  location.Lat,
+					}).Err(); err != nil {
+						log.GetLog().Errorf("Unable to add location to redis. error: %v", err)
+					}
+				}
+			}
+		}
+	}()
 
 	cafe := apiV1.Group("/cafe")
 	cafe.Handle(string(models.POST), "create", authMiddleware.IsAuthorized, cafeHttpHandler.Create)
@@ -117,6 +180,8 @@ func Run() {
 	cafe.Handle(string(models.GET), "fully-booked-days", cafeHttpHandler.GetFullyBookedDays)
 	cafe.Handle(string(models.GET), "time-slots", cafeHttpHandler.GetTimeSlots)
 	cafe.Handle(string(models.POST), "reserve-cafe", authMiddleware.IsAuthorized, cafeHttpHandler.ReserveCafe)
+	cafe.Handle(string(models.GET), "get-nearest-cafes", cafeHttpHandler.GetNearestCafes)
+	cafe.Handle(string(models.GET), "set-location", cafeHttpHandler.SetCafeLocation)
 
 	imageHandler := http.ImageHandler{MongoDb: mongoDb, MongoOpt: mongoDbOpt, ImageRepo: imageRepo}
 	image := apiV1.Group("/image")

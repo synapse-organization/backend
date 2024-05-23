@@ -653,3 +653,56 @@ func (h Cafe) ReserveCafe(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	return
 }
+
+type RequestNearestCafes struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	Radius    float64 `json:"radius"`
+}
+
+func (h Cafe) GetNearestCafes(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req RequestNearestCafes
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind JSON")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	cafes, err := h.Handler.GetNearestCafes(ctx, req.Latitude, req.Longitude, req.Radius)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get nearest cafes. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"cafes": cafes})
+
+}
+
+func (h Cafe) SetCafeLocation(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req models.Location
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind JSON")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	err = h.Handler.SetCafeLocation(ctx, &req)
+	if err != nil {
+		log.GetLog().Errorf("Unable to set cafe location. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
