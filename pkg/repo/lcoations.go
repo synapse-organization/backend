@@ -10,6 +10,7 @@ import (
 type LocationsRepo interface {
 	SetLocation(ctx context.Context, location *models.Location) error
 	FindAll(ctx context.Context) ([]*models.Location, error)
+	GetCafeLocation(ctx context.Context, id int32) (*models.Location, error)
 }
 
 type LocationsRepoImp struct {
@@ -53,4 +54,14 @@ func (r *LocationsRepoImp) FindAll(ctx context.Context) ([]*models.Location, err
 		locations = append(locations, &location)
 	}
 	return locations, err
+}
+
+func (r *LocationsRepoImp) GetCafeLocation(ctx context.Context, id int32) (*models.Location, error) {
+	var location models.Location
+	err := r.postgres.QueryRow(ctx, "SELECT id, latitude, longitude FROM locations id=$1", id).Scan(&location.CafeID, &location.Lat, &location.Lng)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get locations. error: %v", err)
+		return nil, err
+	}
+	return &location, nil
 }

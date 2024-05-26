@@ -181,6 +181,7 @@ func Run() {
 	cafe.Handle(string(models.GET), "time-slots", cafeHttpHandler.GetTimeSlots)
 	cafe.Handle(string(models.POST), "reserve-cafe", authMiddleware.IsAuthorized, cafeHttpHandler.ReserveCafe)
 	cafe.Handle(string(models.GET), "get-nearest-cafes", cafeHttpHandler.GetNearestCafes)
+	cafe.Handle(string(models.GET), "get-cafe-location", cafeHttpHandler.GetCafeLocation)
 	cafe.Handle(string(models.GET), "set-location", cafeHttpHandler.SetCafeLocation)
 
 	imageHandler := http.ImageHandler{MongoDb: mongoDb, MongoOpt: mongoDbOpt, ImageRepo: imageRepo}
