@@ -706,3 +706,31 @@ func (h Cafe) SetCafeLocation(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
+
+type RequestGetCafeLocation struct {
+	CafeID int32 `json:"cafe_id"`
+}
+
+func (h Cafe) GetCafeLocation(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req RequestGetCafeLocation
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind JSON")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	cafe, err := h.Handler.GetCafeLocation(ctx, req.CafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe location. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": cafe})
+
+}
