@@ -13,7 +13,8 @@ var (
 	ErrEmailExists       = StringError{Msg: "email already exists"}
 	ErrStartTimeInvalid  = StringError{Msg: "start time is invalid"}
 	ErrEndTimeInvalid    = StringError{Msg: "end time is invalid"}
-	ErrImageInvalid		= StringError{Msg: "image doesn't exist"}
+	ErrImageInvalid      = StringError{Msg: "image doesn't exist"}
+	ErrRatingInvalid     = StringError{Msg: "rating is invalid"}
 )
 
 type StringError struct {

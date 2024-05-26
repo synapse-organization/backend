@@ -22,7 +22,7 @@ type CafeHandler struct {
 	CommentRepo repo.CommentsRepo
 	ImageRepo   repo.ImageRepo
 	EventRepo   repo.EventRepo
-	UserRepo	repo.UsersRepo
+	UserRepo    repo.UsersRepo
 }
 
 func (c CafeHandler) Create(ctx context.Context, cafe *models.Cafe) error {
@@ -123,7 +123,7 @@ func (c CafeHandler) AddComment(ctx context.Context, cafeID int32, userID string
 type CommentWithUserName struct {
 	*models.Comment
 	UserFirstName string `json:"user_first_name"`
-	UserLastName	string `json:"user_last_name"`
+	UserLastName  string `json:"user_last_name"`
 }
 
 func (c CafeHandler) GetComments(ctx context.Context, cafeID int32, counter int) ([]CommentWithUserName, error) {
@@ -134,23 +134,23 @@ func (c CafeHandler) GetComments(ctx context.Context, cafeID int32, counter int)
 		return nil, err
 	}
 
-    var commentsWithNames []CommentWithUserName
+	var commentsWithNames []CommentWithUserName
 
-    for _, comment := range comments {
-        userName, err := c.UserRepo.GetByID(ctx, comment.UserID)
-        if err != nil {
-            log.GetLog().Errorf("Unable to get user name for user ID %d: %v", comment.UserID, err)
-            return nil, err
-        }
+	for _, comment := range comments {
+		userName, err := c.UserRepo.GetByID(ctx, comment.UserID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get user name for user ID %d: %v", comment.UserID, err)
+			return nil, err
+		}
 
-        commentWithUserName := CommentWithUserName{
-            Comment:  comment,
-            UserFirstName: userName.FirstName,
-			UserLastName: userName.LastName,
-        }
+		commentWithUserName := CommentWithUserName{
+			Comment:       comment,
+			UserFirstName: userName.FirstName,
+			UserLastName:  userName.LastName,
+		}
 
-        commentsWithNames = append(commentsWithNames, commentWithUserName)
-    }
+		commentsWithNames = append(commentsWithNames, commentWithUserName)
+	}
 
 	return commentsWithNames, err
 }
@@ -188,7 +188,7 @@ func (c CafeHandler) CreateEvent(ctx context.Context, cafeID int32, name string,
 		EndTime:     end_time,
 		ImageID:     imageID,
 	}
-	
+
 	err = c.EventRepo.CreateEventForCafe(ctx, newEvent)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create event for cafe. error: %v", err)
@@ -196,4 +196,25 @@ func (c CafeHandler) CreateEvent(ctx context.Context, cafeID int32, name string,
 	}
 
 	return err
+}
+
+func (c CafeHandler) RateCafe(ctx context.Context, userID, cafeID int32, rating int32) error {
+	if rating < 1 || rating > 5 {
+		return errors.ErrRatingInvalid.Error()
+	}
+
+	err := c.Rating.CreateOrUpdate(ctx, &models.Rating{
+		ID:     rand.Int31(),
+		UserID: userID,
+		CafeID: cafeID,
+		Rating: rating,
+	})
+
+	if err != nil {
+		log.GetLog().Errorf("Unable to rate cafe. error: %v", err)
+		return nil
+	}
+
+	return nil
+
 }

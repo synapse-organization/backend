@@ -6,6 +6,7 @@ import (
 	"barista/pkg/models"
 	"context"
 	"fmt"
+	"github.com/spf13/cast"
 	"net/http"
 	"strconv"
 	"time"
@@ -205,4 +206,40 @@ func (h Cafe) CreateEvent(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	return
+}
+
+type RequestRateCafe struct {
+	CafeID int32 `json:"cafe_id"`
+	Rating int32 `json:"rating"`
+}
+
+func (h Cafe) RateCafe(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req RequestRateCafe
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().Errorf("Unable to bind json. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to bind json"})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get token ID.")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to get token ID"})
+		return
+	}
+
+	err = h.Handler.RateCafe(ctx, cast.ToInt32(userID), req.CafeID, req.Rating)
+	if err != nil {
+		log.GetLog().Errorf("Unable to rate cafe. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to rate cafe"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+
 }
