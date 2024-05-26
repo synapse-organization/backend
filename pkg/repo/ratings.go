@@ -8,7 +8,7 @@ import (
 )
 
 type RatingsRepo interface {
-	Create(ctx context.Context, rating *models.Rating) error
+	CreateOrUpdate(ctx context.Context, rating *models.Rating) error
 	GetByID(ctx context.Context, id int32) (*models.Rating, error)
 	GetByCafeID(ctx context.Context, cafeID int32) ([]*models.Rating, error)
 	GetCafesRating(ctx context.Context, cafeID int32) (float64, error)
@@ -37,8 +37,8 @@ func NewRatingsRepoImp(postgres *pgxpool.Pool) *RatingsRepoImp {
 	return &RatingsRepoImp{postgres: postgres}
 }
 
-func (r *RatingsRepoImp) Create(ctx context.Context, rating *models.Rating) error {
-	_, err := r.postgres.Exec(ctx, "INSERT INTO ratings (id, cafe_id, user_id, rating) VALUES ($1, $2, $3, $4)", rating.ID, rating.CafeID, rating.UserID, rating.Rating)
+func (r *RatingsRepoImp) CreateOrUpdate(ctx context.Context, rating *models.Rating) error {
+	_, err := r.postgres.Exec(ctx, "INSERT INTO ratings (id, cafe_id, user_id, rating) VALUES ($1, $2, $3, $4) ON CONFLICT (cafe_id, user_id) DO UPDATE SET rating = $4",
 	if err != nil {
 		log.GetLog().Errorf("Unable to insert rating. error: %v", err)
 	}

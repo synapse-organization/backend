@@ -941,7 +941,6 @@ func (c CafeHandler) ReserveCafe(ctx context.Context, reservation *models.Reserv
 	}
 
 	reservation.TransactionID = transactionID
-	reservation.ID = rand.Int31()
 	err = c.ReservationRepo.Create(ctx, reservation)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create reservation. error: %v", err)
@@ -971,6 +970,15 @@ func (c CafeHandler) SetCafeLocation(ctx context.Context, m *models.Location) er
 
 func (c CafeHandler) GetCafeLocation(ctx context.Context, id int32) (*models.Location, error) {
 	return c.LocationsRepo.GetCafeLocation(ctx, id)
+}
+
+func (c CafeHandler) AddRating(ctx context.Context, userID, cafeID, rating int32) error {
+	return c.Rating.CreateOrUpdate(ctx, &models.Rating{
+		ID:     rand.Int31(),
+		UserID: userID,
+		CafeID: cafeID,
+		Rating: rating,
+	})
 }
 
 type ReservationInfo struct {

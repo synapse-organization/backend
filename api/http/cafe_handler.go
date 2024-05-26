@@ -859,3 +859,39 @@ func (h Cafe) AddToFavorite(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	return
 }
+
+type RequestAddRating struct {
+	CafeID int32 `json:"cafe_id"`
+	Rating int32 `json:"rating"`
+}
+
+func (h Cafe) AddRating(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req RequestAddRating
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind JSON")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Error("Unable to get userID from context")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	err = h.Handler.AddRating(ctx, cast.ToInt32(userID), req.CafeID, req.Rating)
+	if err != nil {
+		log.GetLog().Errorf("Unable to add rating. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+
+}
