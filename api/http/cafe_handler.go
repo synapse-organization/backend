@@ -681,7 +681,6 @@ func (h Cafe) GetNearestCafes(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"cafes": cafes})
-
 }
 
 func (h Cafe) SetCafeLocation(c *gin.Context) {
@@ -733,4 +732,53 @@ func (h Cafe) GetCafeLocation(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"status": cafe})
 
+}
+
+func(h Cafe) GetCafeReservations(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	dayStr := c.Query("day")
+	day, err := time.Parse("2006-01-02", dayStr)
+	if err != nil {
+		log.GetLog().Errorf("Unable to parse day. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid day format"})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user id")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	cafe, err := h.Handler.CafeRepo.GetByOwnerID(ctx, userID.(int32))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe by id. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error().Error()})
+		return
+	}
+
+	reservations, err := h.Handler.GetCafeReservations(ctx, cafe, day)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe reservations. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"cafe_reservations": reservations})
+	return
 }
