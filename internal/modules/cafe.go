@@ -940,6 +940,7 @@ func (c CafeHandler) ReserveCafe(ctx context.Context, reservation *models.Reserv
 	}
 
 	reservation.TransactionID = transactionID
+	reservation.ID = rand.Int31()
 	err = c.ReservationRepo.Create(ctx, reservation)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create reservation. error: %v", err)
@@ -969,4 +970,40 @@ func (c CafeHandler) SetCafeLocation(ctx context.Context, m *models.Location) er
 
 func (c CafeHandler) GetCafeLocation(ctx context.Context, id int32) (*models.Location, error) {
 	return c.LocationsRepo.GetCafeLocation(ctx, id)
+}
+
+type ReservationInfo struct {
+	FirstName string `json:"first_name"`
+	LastName string `json:"last_name"`
+	People int32 `json:"people"`
+	StartTime time.Time `json:"start_time"`
+	EndTime time.Time `json:"end_time"`
+}
+
+func (c CafeHandler) GetCafeReservations(ctx context.Context, cafe *models.Cafe, day time.Time) ([]ReservationInfo, error) {
+	reservations, err := c.ReservationRepo.GetByDate(ctx, cafe.ID, day, day.Add(time.Hour * 24))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get reservations by cafe id. error: %v", err)
+		return nil, err
+	}
+
+	reservationsInfo := []ReservationInfo{}
+
+	for _, reservation := range *reservations {
+		user, err := c.UserRepo.GetByID(ctx, reservation.UserID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get user by id. error: %v", err)
+			return nil, err
+		}
+
+		reservationsInfo = append(reservationsInfo, ReservationInfo{
+			FirstName: user.FirstName,
+			LastName: user.LastName,
+			People: reservation.People,
+			StartTime: reservation.StartTime,
+			EndTime: reservation.EndTime,
+		})
+	}
+
+	return reservationsInfo, nil
 }
