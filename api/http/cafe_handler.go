@@ -246,7 +246,54 @@ func (h Cafe) AddMenuItem(c *gin.Context) {
 	return
 }
 
-func (h Cafe) GetMenu(c *gin.Context) {
+func (h Cafe) PrivateMenu(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user id")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	cafe, err := h.Handler.CafeRepo.GetByOwnerID(ctx, userID.(int32))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe by id. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error().Error()})
+		return
+	}
+
+	categories, menu, cafeName, cafeImage, err := h.Handler.GetMenu(ctx, cafe.ID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get menu. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"categories": categories,
+		"menu":       menu,
+		"cafe_name":  cafeName,
+		"cafe_image": cafeImage,
+	})
+	return
+}
+
+func (h Cafe) PublicMenu(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
@@ -731,7 +778,6 @@ func (h Cafe) GetCafeLocation(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": cafe})
-
 }
 
 func(h Cafe) GetCafeReservations(c *gin.Context) {
