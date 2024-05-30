@@ -111,21 +111,28 @@ func (c *CafesRepoImp) Create(ctx context.Context, cafe *models.Cafe) (int32, er
 
 func (c *CafesRepoImp) GetByID(ctx context.Context, id int32) (*models.Cafe, error) {
 	var cafe models.Cafe
-	categories := ""
-	amenities := ""
+	var categories, amenities string
 	err := c.postgres.QueryRow(ctx, "SELECT id, owner_id, name, description, opening_time, closing_time, capacity, phone_number, email, province, city, address, location, categories, amenities, reservation_price FROM cafes WHERE id = $1", id).Scan(&cafe.ID, &cafe.OwnerID, &cafe.Name, &cafe.Description, &cafe.OpeningTime, &cafe.ClosingTime, &cafe.Capacity, &cafe.ContactInfo.Phone, &cafe.ContactInfo.Email, &cafe.ContactInfo.Province, &cafe.ContactInfo.City, &cafe.ContactInfo.Address, &cafe.ContactInfo.Location, &categories, &amenities, &cafe.ReservationPrice)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get cafe by id. error: %v", err)
 	}
 
-	for _, category := range strings.Split(categories, ",") {
-		cafe.Categories = append(cafe.Categories, models.CafeCategory(category))
+	if categories == "" {
+		cafe.Categories = []models.CafeCategory{}
+	} else {
+		for _, category := range strings.Split(categories, ",") {
+			cafe.Categories = append(cafe.Categories, models.CafeCategory(category))
+		}
 	}
 
-	for _, amenity := range strings.Split(amenities, ",") {
-		cafe.Amenities = append(cafe.Amenities, models.AmenityCategory(amenity))
+	if amenities == "" {
+		cafe.Amenities = []models.AmenityCategory{}
+	} else {
+		for _, amenity := range strings.Split(amenities, ",") {
+			cafe.Amenities = append(cafe.Amenities, models.AmenityCategory(amenity))
+		}
 	}
-
+	
 	return &cafe, err
 }
 
