@@ -119,6 +119,7 @@ func Run() {
 	reservationRepo := repo.NewReservationRepoImp(postgres)
 	menuItemRepo := repo.NewMenuItemRepoImp(postgres)
 	locationRepo := repo.NewLocationsRepoImp(postgres)
+	favoriteRepo := repo.NewFavoritesRepoImp(postgres)
 
 	cafeHandler := modules.CafeHandler{
 		CafeRepo:        cafeRepo,
@@ -130,6 +131,7 @@ func Run() {
 		ReservationRepo: reservationRepo,
 		MenuItemRepo:    menuItemRepo,
 		PaymentRepo:     paymentRepo,
+		FavoriteRepo: 	 favoriteRepo,
 		Redis:           rdb,
 	}
 	cafeHttpHandler := http.Cafe{Handler: &cafeHandler}
@@ -185,6 +187,7 @@ func Run() {
 	cafe.Handle(string(models.GET), "get-cafe-location", cafeHttpHandler.GetCafeLocation)
 	cafe.Handle(string(models.GET), "set-location", cafeHttpHandler.SetCafeLocation)
 	cafe.Handle(string(models.GET), "cafe-reservations", authMiddleware.IsAuthorized, cafeHttpHandler.GetCafeReservations)
+	cafe.Handle(string(models.POST), "add-to-favorite", authMiddleware.IsAuthorized, cafeHttpHandler.AddToFavorite)
 
 	imageHandler := http.ImageHandler{MongoDb: mongoDb, MongoOpt: mongoDbOpt, ImageRepo: imageRepo}
 	image := apiV1.Group("/image")
