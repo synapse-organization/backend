@@ -29,6 +29,7 @@ type CafeHandler struct {
 	MenuItemRepo    repo.MenuItemsRepo
 	PaymentRepo     repo.Transaction
 	LocationsRepo   repo.LocationsRepo
+	FavoriteRepo	repo.FavoritesRepo
 	Redis           *redis.Client
 }
 
@@ -1006,4 +1007,27 @@ func (c CafeHandler) GetCafeReservations(ctx context.Context, cafe *models.Cafe,
 	}
 
 	return reservationsInfo, nil
+}
+
+func (c CafeHandler) AddToFavorite(ctx context.Context, userID int32, cafeID int32) error {
+	exists, err := c.FavoriteRepo.CheckExists(ctx, userID, cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to check favorite existence. error: %v", err)
+		return err
+	}
+
+	if exists {
+		return fmt.Errorf("Favorite already exists")
+	}
+
+	_, err = c.FavoriteRepo.Create(ctx, &models.Favorite{
+		UserID: userID,
+		CafeID: cafeID,
+	})
+	if err != nil {
+		log.GetLog().Errorf("Unable to create favorite. error: %v", err)
+		return err
+	}
+
+	return nil
 }
