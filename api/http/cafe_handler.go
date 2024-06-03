@@ -92,14 +92,14 @@ func (h Cafe) PublicCafeProfile(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("userID")
-	if !exists {
-		log.GetLog().Error("Unable to get userID from context")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
+	var userID int32
+    if userIDValue, exists := c.Get("userID"); exists {
+        userID = userIDValue.(int32)
+    } else {
+        userID = 0
+    }
 
-	cafe, err := h.Handler.PublicCafeProfile(ctx, int32(cafe_id), userID.(int32))
+	cafe, err := h.Handler.PublicCafeProfile(ctx, int32(cafe_id), userID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
