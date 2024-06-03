@@ -981,6 +981,7 @@ func (c CafeHandler) AddRating(ctx context.Context, userID, cafeID, rating int32
 	})
 }
 
+<<<<<<< Updated upstream
 type ReservationInfo struct {
 	FirstName string `json:"first_name"`
 	LastName string `json:"last_name"`
@@ -1038,4 +1039,20 @@ func (c CafeHandler) AddToFavorite(ctx context.Context, userID int32, cafeID int
 	}
 
 	return nil
+=======
+func (c CafeHandler) GetRating(ctx context.Context, userID int32, cafeID int32) (float64, int32, error) {
+	cafeRating, err := c.Rating.GetCafesRating(ctx, cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe rating. error: %v", err)
+		return 0, 0, err
+	}
+
+	cafeRatingCount, err := c.Rating.GetRatingByUserIDAndCafeID(ctx, userID, cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe rating count. error: %v", err)
+		return 0, 0, err
+	}
+
+	return cafeRating, cafeRatingCount.Rating, nil
+>>>>>>> Stashed changes
 }

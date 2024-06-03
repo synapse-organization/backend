@@ -14,6 +14,7 @@ type RatingsRepo interface {
 	GetCafesRating(ctx context.Context, cafeID int32) (float64, error)
 	GetByUserID(ctx context.Context, userID int32) ([]*models.Rating, error)
 	GetNTopRatings(ctx context.Context, n int32) ([]int32, error)
+	GetRatingByUserIDAndCafeID(ctx context.Context, userID, cafeID int32) (*models.Rating, error)
 }
 
 type RatingsRepoImp struct {
@@ -38,7 +39,7 @@ func NewRatingsRepoImp(postgres *pgxpool.Pool) *RatingsRepoImp {
 }
 
 func (r *RatingsRepoImp) CreateOrUpdate(ctx context.Context, rating *models.Rating) error {
-	_, err := r.postgres.Exec(ctx, "INSERT INTO ratings (id, cafe_id, user_id, rating) VALUES ($1, $2, $3, $4) ON CONFLICT (cafe_id, user_id) DO UPDATE SET rating = $4",
+	_, err := r.postgres.Exec(ctx, "INSERT INTO ratings (id, cafe_id, user_id, rating) VALUES ($1, $2, $3, $4) ON CONFLICT (cafe_id, user_id) DO UPDATE SET rating = $4", rating.ID, rating.CafeID, rating.UserID, rating.Rating)
 	if err != nil {
 		log.GetLog().Errorf("Unable to insert rating. error: %v", err)
 	}
@@ -137,4 +138,13 @@ func (r *RatingsRepoImp) GetNTopRatings(ctx context.Context, n int32) ([]int32, 
 		cafeIDs = append(cafeIDs, cafeID)
 	}
 	return cafeIDs, nil
+}
+
+func (r *RatingsRepoImp) GetRatingByUserIDAndCafeID(ctx context.Context, userID, cafeID int32) (*models.Rating, error) {
+	var rating models.Rating
+	err := r.postgres.QueryRow(ctx, "SELECT id, cafe_id, user_id, rating FROM ratings WHERE user_id = $1 AND cafe_id = $2", userID, cafeID).Scan(&rating.ID, &rating.CafeID, &rating.UserID, &rating.Rating)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get rating by user id and cafe id. error: %v", err)
+	}
+	return &rating, err
 }

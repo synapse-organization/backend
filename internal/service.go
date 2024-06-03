@@ -191,6 +191,7 @@ func Run() {
 
 	//rating
 	cafe.Handle(string(models.POST), "add-rating", authMiddleware.IsAuthorized, cafeHttpHandler.AddRating)
+	cafe.Handle(string(models.GET), "get-cafe-rating", cafeHttpHandler.GetRating)
 
 	imageHandler := http.ImageHandler{MongoDb: mongoDb, MongoOpt: mongoDbOpt, ImageRepo: imageRepo}
 	image := apiV1.Group("/image")

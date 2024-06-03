@@ -895,3 +895,36 @@ func (h Cafe) AddRating(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 
 }
+
+type ResponseGetRating struct {
+	Rating float64 `json:"rating"`
+	MyRate int32   `json:"my_rate"`
+}
+
+func (h Cafe) GetRating(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	cafeID, err := strconv.Atoi(c.Query("cafe_id"))
+	if err != nil {
+		log.GetLog().Errorf("Invalid cafe id. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Error("Unable to get userID from context")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	rating, myRate, err := h.Handler.GetRating(ctx, cast.ToInt32(userID), int32(cafeID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get rating. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"rating": ResponseGetRating{Rating: rating, MyRate: myRate}})
+}
