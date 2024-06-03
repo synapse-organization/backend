@@ -1024,7 +1024,7 @@ func (c CafeHandler) GetAvailableTimeSlots(ctx context.Context, cafeID int32, da
 		return nil, err
 	}
 
-	return c.ReservationRepo.GetAvailableTimeSlots(ctx, cafeID, day, cafe.Capacity)
+	return c.ReservationRepo.GetAvailableTimeSlots(ctx, cafeID, day, cafe.Capacity, cafe.OpeningTime, cafe.ClosingTime)
 }
 
 func (c CafeHandler) ReserveCafe(ctx context.Context, reservation *models.Reservation) error {

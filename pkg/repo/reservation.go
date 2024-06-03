@@ -17,7 +17,7 @@ type ReservationRepo interface {
 	GetByDate(ctx context.Context, cafeID int32, startTime time.Time, endTime time.Time) (*[]models.Reservation, error)
 	CountByTime(ctx context.Context, cafeID int32, startTime time.Time, endTime time.Time) (int32, error)
 	GetFullyBookedDays(ctx context.Context, cafeID int32, startDate time.Time) ([]time.Time, error)
-	GetAvailableTimeSlots(ctx context.Context, cafeID int32, day time.Time, cafeCapacity int32) ([]map[string]interface{}, error)
+	GetAvailableTimeSlots(ctx context.Context, cafeID int32, day time.Time, cafeCapacity int32, openingTime int8, closingTime int8) ([]map[string]interface{}, error)
 }
 
 type ReservationRepoImp struct {
@@ -146,44 +146,45 @@ func (r *ReservationRepoImp) GetFullyBookedDays(ctx context.Context, cafeID int3
 	return fullyBookedDays, nil
 }
 
-func (r *ReservationRepoImp) GetAvailableTimeSlots(ctx context.Context, cafeID int32, day time.Time, cafeCapacity int32) ([]map[string]interface{}, error) {
-	query := `
-		WITH time_slots AS (
-			SELECT generate_series($2::timestamp, $3::timestamp, '1 hour') AS slot_time
-		)
-		SELECT 
-			time_slots.slot_time,
-			($4 - COALESCE(SUM(reservations.people), 0)) AS remaining_capacity
-		FROM time_slots
-		LEFT JOIN reservations ON time_slots.slot_time = reservations.start_time AND reservations.cafe_id = $1
-		GROUP BY time_slots.slot_time
-		HAVING ($4 - COALESCE(SUM(reservations.people), 0)) > 0
-	`
+func (r *ReservationRepoImp) GetAvailableTimeSlots(ctx context.Context, cafeID int32, day time.Time, cafeCapacity int32, openingTime int8, closingTime int8) ([]map[string]interface{}, error) {
+    dayStart := day.Add(time.Duration(openingTime) * time.Hour)
+    dayEnd := day.Add(time.Duration(closingTime-1) * time.Hour)
 
-	dayStart := day.Truncate(24 * time.Hour)
-	dayEnd := dayStart.Add(24 * time.Hour)
+    query := `
+        WITH time_slots AS (
+            SELECT generate_series($2::timestamp, $3::timestamp, '1 hour') AS slot_time
+        )
+        SELECT 
+            time_slots.slot_time,
+            ($4 - COALESCE(SUM(reservations.people), 0)) AS remaining_capacity
+        FROM time_slots
+        LEFT JOIN reservations ON time_slots.slot_time = reservations.start_time AND reservations.cafe_id = $1
+        GROUP BY time_slots.slot_time
+        HAVING ($4 - COALESCE(SUM(reservations.people), 0)) > 0
+    `
 
-	rows, err := r.postgres.Query(ctx, query, cafeID, dayStart, dayEnd, cafeCapacity)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+    rows, err := r.postgres.Query(ctx, query, cafeID, dayStart, dayEnd, cafeCapacity)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
 
-	var timeSlots []map[string]interface{}
-	for rows.Next() {
-		var slotTime time.Time
-		var remainingCapacity int32
-		if err := rows.Scan(&slotTime, &remainingCapacity); err != nil {
-			return nil, err
-		}
-		timeSlots = append(timeSlots, map[string]interface{}{
-			"slot_time":         slotTime,
-			"remaining_capacity": remainingCapacity,
-		})
-	}
+    var timeSlots []map[string]interface{}
+    for rows.Next() {
+        var slotTime time.Time
+        var remainingCapacity int32
+        if err := rows.Scan(&slotTime, &remainingCapacity); err != nil {
+            return nil, err
+        }
+        timeSlots = append(timeSlots, map[string]interface{}{
+            "slot_time":         slotTime,
+            "remaining_capacity": remainingCapacity,
+        })
+    }
 
-	return timeSlots, nil
+    return timeSlots, nil
 }
+
 
 func (r *ReservationRepoImp) GetByDate(ctx context.Context, cafeID int32, startTime time.Time, endTime time.Time) (*[]models.Reservation, error) {
 	rows, err := r.postgres.Query(ctx,
