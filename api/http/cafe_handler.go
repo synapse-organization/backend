@@ -78,7 +78,6 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"cafes": cafes})
-
 }
 
 func (h Cafe) PublicCafeProfile(c *gin.Context) {
@@ -93,7 +92,14 @@ func (h Cafe) PublicCafeProfile(c *gin.Context) {
 		return
 	}
 
-	cafe, err := h.Handler.PublicCafeProfile(ctx, int32(cafe_id))
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Error("Unable to get userID from context")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	cafe, err := h.Handler.PublicCafeProfile(ctx, int32(cafe_id), userID.(int32))
 	if err != nil {
 		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -106,6 +112,8 @@ func (h Cafe) PublicCafeProfile(c *gin.Context) {
 	})
 	return
 }
+
+
 
 type RequestAddComment struct {
 	CafeID  int32  `json:"cafe_id"`
@@ -467,7 +475,7 @@ func (h Cafe) PrivateCafe(c *gin.Context) {
 		return
 	}
 
-	privateCafe, err := h.Handler.PublicCafeProfile(ctx, cafe.ID)
+	privateCafe, err := h.Handler.PrivateCafeProfile(ctx, cafe.ID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get private cafe profile. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
