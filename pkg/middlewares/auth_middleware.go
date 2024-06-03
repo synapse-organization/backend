@@ -40,3 +40,25 @@ func (a AuthMiddleware) IsAuthorized(c *gin.Context) {
 	c.Set("claims", claims)
 	c.Next()
 }
+
+func (a AuthMiddleware) OptionalAuth(c *gin.Context) {
+    token := c.Request.Header.Get("Authorization")
+    if token == "" {
+        c.Next()
+        return
+    }
+
+    claims, err := utils.ValidateToken(a.Postgres, token)
+    if err != "" {
+        log.GetLog().Errorf("Token is invalid. error: %v", err)
+        c.Next()
+        return
+    }
+
+    c.Set("userID", claims.Uid)
+    c.Set("email", claims.Email)
+    c.Set("role", claims.Role)
+    c.Set("tokenID", claims.TokenID)
+    c.Set("claims", claims)
+    c.Next()
+}

@@ -165,7 +165,7 @@ func Run() {
 	cafe := apiV1.Group("/cafe")
 	cafe.Handle(string(models.POST), "create", authMiddleware.IsAuthorized, cafeHttpHandler.Create)
 	cafe.Handle(string(models.POST), "search-cafe", cafeHttpHandler.SearchCafe)
-	cafe.Handle(string(models.GET), "public-cafe", cafeHttpHandler.PublicCafeProfile)
+	cafe.Handle(string(models.GET), "public-cafe", authMiddleware.OptionalAuth, cafeHttpHandler.PublicCafeProfile)
 	cafe.Handle(string(models.POST), "add-comment", authMiddleware.IsAuthorized, cafeHttpHandler.AddComment)
 	//cafe.Handle(string(models.GET), "get-comments", cafeHttpHandler.GetComments)
 	cafe.Handle(string(models.POST), "create-event", authMiddleware.IsAuthorized, cafeHttpHandler.CreateEvent)

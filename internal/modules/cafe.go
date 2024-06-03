@@ -172,11 +172,16 @@ func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID int32, userID
 	provinceNum := cafe.ContactInfo.Province
 	cityNum := cafe.ContactInfo.City
 
-	isFavorite, err := c.FavoriteRepo.CheckExists(ctx, userID, cafeID)
-	if err != nil {
-		log.GetLog().Errorf("Unable to check favorite existence. error: %v", err)
-		return nil, err
-	}
+	var isFavorite bool
+    if userID != 0 {
+        isFavorite, err = c.FavoriteRepo.CheckExists(ctx, userID, cafeID)
+        if err != nil {
+            log.GetLog().Errorf("Unable to check favorite existence. error: %v", err)
+            return nil, err
+        }
+    } else {
+        isFavorite = false
+    }
 
 	publicCafe := PublicCafeProvinceCity{
 		ID:               cafe.ID,
