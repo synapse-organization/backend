@@ -188,6 +188,7 @@ func Run() {
 	cafe.Handle(string(models.GET), "set-location", cafeHttpHandler.SetCafeLocation)
 	cafe.Handle(string(models.GET), "cafe-reservations", authMiddleware.IsAuthorized, cafeHttpHandler.GetCafeReservations)
 	cafe.Handle(string(models.POST), "add-to-favorite", authMiddleware.IsAuthorized, cafeHttpHandler.AddToFavorite)
+	cafe.Handle(string(models.POST), "remove-favorite", authMiddleware.IsAuthorized, cafeHttpHandler.RemoveFavorite)
 
 	imageHandler := http.ImageHandler{MongoDb: mongoDb, MongoOpt: mongoDbOpt, ImageRepo: imageRepo}
 	image := apiV1.Group("/image")
