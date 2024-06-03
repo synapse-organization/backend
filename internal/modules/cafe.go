@@ -1031,3 +1031,13 @@ func (c CafeHandler) AddToFavorite(ctx context.Context, userID int32, cafeID int
 
 	return nil
 }
+
+func (c CafeHandler) RemoveFavorite(ctx context.Context, userID int32, cafeID int32) error {
+	err := c.FavoriteRepo.DeleteByIDs(ctx, userID, cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete favorite. error: %v", err)
+		return err
+	}
+
+	return nil
+}

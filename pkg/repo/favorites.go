@@ -14,6 +14,7 @@ type FavoritesRepo interface {
 	GetByID(ctx context.Context, id int32) (*models.Favorite, error)
 	CheckExists(ctx context.Context, userID int32, cafeID int32) (bool, error)
 	DeleteByID(ctx context.Context, id int32) error
+	DeleteByIDs(ctx context.Context, userID int32, cafeID int32) error
 }
 
 type FavoritesRepoImp struct {
@@ -77,7 +78,21 @@ func (r *FavoritesRepoImp) DeleteByID(ctx context.Context, id int32) error {
 		`DELETE FROM favorites
 		WHERE id = $1`, id)
 	if err != nil {
-		log.GetLog().Errorf("Unable to delete favorite. error: %v", err)
+		log.GetLog().Errorf("Unable to delete favorite by id. error: %v", err)
+		return err
+	}
+
+	return err
+}
+
+func (r *FavoritesRepoImp) DeleteByIDs(ctx context.Context, userID int32, cafeID int32) error {
+	_, err := r.postgres.Exec(ctx,
+		`DELETE FROM favorites
+		WHERE user_id = $1
+		AND cafe_id = $2`,
+		userID, cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete favorite by ids. error: %v", err)
 		return err
 	}
 
