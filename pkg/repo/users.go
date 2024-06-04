@@ -58,7 +58,17 @@ func NewUserRepoImp(postgres *pgxpool.Pool) *UserRepoImp {
 }
 
 func (u *UserRepoImp) Create(ctx context.Context, user *models.User) error {
-	_, err := u.postgres.Exec(ctx, "INSERT INTO users (id, first_name, last_name, email, password, phone, sex, user_role) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", user.ID, user.FirstName, user.LastName, user.Email, user.Password, user.Phone, user.Sex, user.Role)
+	newExtraInfo := map[string]interface{}{
+		"bank_account": user.BankAccount,
+		"national_id":  user.NationalID,
+	}
+	data, err := json.Marshal(newExtraInfo)
+	if err != nil {
+		log.GetLog().Errorf("Unable to marshal extra info. error: %v", err)
+		return err
+	}
+
+	_, err = u.postgres.Exec(ctx, "INSERT INTO users (id, first_name, last_name, email, password, phone, sex, user_role, extra_info) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)", user.ID, user.FirstName, user.LastName, user.Email, user.Password, user.Phone, user.Sex, user.Role, data)
 	if err != nil {
 		log.GetLog().Errorf("Unable to intser user. error: %v", err)
 	}

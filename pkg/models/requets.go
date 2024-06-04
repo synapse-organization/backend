@@ -6,8 +6,8 @@ type RequestTransfer struct {
 }
 
 type RequestWithdraw struct {
-	To     int32 `json:"to"`
-	Amount int64 `json:"amount"`
+	To     string `json:"to"`
+	Amount int64  `json:"amount"`
 }
 
 type RequestDeposit struct {

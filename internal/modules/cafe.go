@@ -173,15 +173,15 @@ func (c CafeHandler) PublicCafeProfile(ctx context.Context, cafeID int32, userID
 	cityNum := cafe.ContactInfo.City
 
 	var isFavorite bool
-    if userID != 0 {
-        isFavorite, err = c.FavoriteRepo.CheckExists(ctx, userID, cafeID)
-        if err != nil {
-            log.GetLog().Errorf("Unable to check favorite existence. error: %v", err)
-            return nil, err
-        }
-    } else {
-        isFavorite = false
-    }
+	if userID != 0 {
+		isFavorite, err = c.FavoriteRepo.CheckExists(ctx, userID, cafeID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to check favorite existence. error: %v", err)
+			return nil, err
+		}
+	} else {
+		isFavorite = false
+	}
 
 	publicCafe := PublicCafeProvinceCity{
 		ID:               cafe.ID,
@@ -1064,7 +1064,6 @@ func (c CafeHandler) ReserveCafe(ctx context.Context, reservation *models.Reserv
 	}
 
 	reservation.TransactionID = transactionID
-	reservation.ID = rand.Int31()
 	err = c.ReservationRepo.Create(ctx, reservation)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create reservation. error: %v", err)
@@ -1094,6 +1093,15 @@ func (c CafeHandler) SetCafeLocation(ctx context.Context, m *models.Location) er
 
 func (c CafeHandler) GetCafeLocation(ctx context.Context, id int32) (*models.Location, error) {
 	return c.LocationsRepo.GetCafeLocation(ctx, id)
+}
+
+func (c CafeHandler) AddRating(ctx context.Context, userID, cafeID, rating int32) error {
+	return c.Rating.CreateOrUpdate(ctx, &models.Rating{
+		ID:     rand.Int31(),
+		UserID: userID,
+		CafeID: cafeID,
+		Rating: rating,
+	})
 }
 
 type ReservationInfo struct {
@@ -1153,6 +1161,22 @@ func (c CafeHandler) AddToFavorite(ctx context.Context, userID int32, cafeID int
 	}
 
 	return nil
+}
+
+func (c CafeHandler) GetRating(ctx context.Context, userID int32, cafeID int32) (float64, int32, error) {
+	cafeRating, err := c.Rating.GetCafesRating(ctx, cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe rating. error: %v", err)
+		return 0, 0, err
+	}
+
+	cafeRatingCount, err := c.Rating.GetRatingByUserIDAndCafeID(ctx, userID, cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe rating count. error: %v", err)
+		return 0, 0, err
+	}
+
+	return cafeRating, cafeRatingCount.Rating, nil
 }
 
 func (c CafeHandler) RemoveFavorite(ctx context.Context, userID int32, cafeID int32) error {

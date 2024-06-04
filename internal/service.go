@@ -131,7 +131,7 @@ func Run() {
 		ReservationRepo: reservationRepo,
 		MenuItemRepo:    menuItemRepo,
 		PaymentRepo:     paymentRepo,
-		FavoriteRepo: 	 favoriteRepo,
+		FavoriteRepo:    favoriteRepo,
 		Redis:           rdb,
 	}
 	cafeHttpHandler := http.Cafe{Handler: &cafeHandler}
@@ -172,7 +172,7 @@ func Run() {
 	cafe.Handle(string(models.POST), "add-menu-item", authMiddleware.IsAuthorized, cafeHttpHandler.AddMenuItem)
 	cafe.Handle(string(models.GET), "home", cafeHttpHandler.Home)
 	cafe.Handle(string(models.GET), "private-menu", cafeHttpHandler.PrivateMenu)
-	cafe.Handle(string(models.GET), "public-menu", cafeHttpHandler.PublicMenu)	
+	cafe.Handle(string(models.GET), "public-menu", cafeHttpHandler.PublicMenu)
 	cafe.Handle(string(models.PATCH), "edit-menu-item", authMiddleware.IsAuthorized, cafeHttpHandler.EditMenuItem)
 	cafe.Handle(string(models.DELETE), "delete-menu-item", authMiddleware.IsAuthorized, cafeHttpHandler.DeleteMenuItem)
 	cafe.Handle(string(models.POST), "reserve-event", authMiddleware.IsAuthorized, cafeHttpHandler.ReserveEvent)
@@ -183,12 +183,18 @@ func Run() {
 	cafe.Handle(string(models.GET), "fully-booked-days", cafeHttpHandler.GetFullyBookedDays)
 	cafe.Handle(string(models.GET), "time-slots", cafeHttpHandler.GetTimeSlots)
 	cafe.Handle(string(models.POST), "reserve-cafe", authMiddleware.IsAuthorized, cafeHttpHandler.ReserveCafe)
-	cafe.Handle(string(models.GET), "get-nearest-cafes", cafeHttpHandler.GetNearestCafes)
-	cafe.Handle(string(models.GET), "get-cafe-location", cafeHttpHandler.GetCafeLocation)
-	cafe.Handle(string(models.GET), "set-location", cafeHttpHandler.SetCafeLocation)
 	cafe.Handle(string(models.GET), "cafe-reservations", authMiddleware.IsAuthorized, cafeHttpHandler.GetCafeReservations)
 	cafe.Handle(string(models.POST), "add-to-favorite", authMiddleware.IsAuthorized, cafeHttpHandler.AddToFavorite)
 	cafe.Handle(string(models.DELETE), "remove-favorite", authMiddleware.IsAuthorized, cafeHttpHandler.RemoveFavorite)
+
+	//rating
+	cafe.Handle(string(models.POST), "add-rating", authMiddleware.IsAuthorized, cafeHttpHandler.AddRating)
+	cafe.Handle(string(models.GET), "get-cafe-rating", cafeHttpHandler.GetRating)
+
+	// location
+	cafe.Handle(string(models.POST), "get-nearest-cafes", cafeHttpHandler.GetNearestCafes)
+	cafe.Handle(string(models.POST), "get-cafe-location", cafeHttpHandler.GetCafeLocation)
+	cafe.Handle(string(models.POST), "set-location", cafeHttpHandler.SetCafeLocation)
 
 	imageHandler := http.ImageHandler{MongoDb: mongoDb, MongoOpt: mongoDbOpt, ImageRepo: imageRepo}
 	image := apiV1.Group("/image")
@@ -196,7 +202,7 @@ func Run() {
 	image.Handle(string(models.GET), "download", imageHandler.DownloadImage)
 	image.Handle(string(models.POST), "submit", imageHandler.SubmitImage)
 
-	paymentHandler := modules.PaymentHandler{PaymentRepo: paymentRepo}
+	paymentHandler := modules.PaymentHandler{PaymentRepo: paymentRepo, UserRepo: userRepo}
 	paymentHttpHandler := http.Payment{Handler: &paymentHandler}
 	payment := apiV1.Group("/payment")
 	payment.Handle(string(models.POST), "transfer", authMiddleware.IsAuthorized, paymentHttpHandler.Transfer)
