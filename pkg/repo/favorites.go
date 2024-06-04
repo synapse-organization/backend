@@ -15,6 +15,7 @@ type FavoritesRepo interface {
 	CheckExists(ctx context.Context, userID int32, cafeID int32) (bool, error)
 	DeleteByID(ctx context.Context, id int32) error
 	DeleteByIDs(ctx context.Context, userID int32, cafeID int32) error
+	GetFavoritesByUserID(ctx context.Context, userID int32) ([]*models.Favorite, error)
 }
 
 type FavoritesRepoImp struct {
@@ -59,7 +60,7 @@ func (r *FavoritesRepoImp) GetByID(ctx context.Context, id int32) (*models.Favor
 
 func (r *FavoritesRepoImp) CheckExists(ctx context.Context, userID int32, cafeID int32) (bool, error) {
 	var exists bool
-	err := r.postgres.QueryRow(ctx, 
+	err := r.postgres.QueryRow(ctx,
 		`SELECT EXISTS(
 			SELECT 1
 			FROM favorites
@@ -97,4 +98,24 @@ func (r *FavoritesRepoImp) DeleteByIDs(ctx context.Context, userID int32, cafeID
 	}
 
 	return err
+}
+
+func (r *FavoritesRepoImp) GetFavoritesByUserID(ctx context.Context, userID int32) ([]*models.Favorite, error) {
+	var favorites []*models.Favorite
+	rows, err := r.postgres.Query(ctx, "SELECT id, user_id, cafe_id FROM favorites WHERE user_id = $1", userID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get favorites by user id. error: %v", err)
+	}
+
+	for rows.Next() {
+		var favorite models.Favorite
+		err := rows.Scan(&favorite.ID, &favorite.UserID, &favorite.CafeID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to scan favorite. error: %v", err)
+			continue
+		}
+		favorites = append(favorites, &favorite)
+	}
+
+	return favorites, err
 }

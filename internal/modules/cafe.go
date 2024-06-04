@@ -1188,3 +1188,26 @@ func (c CafeHandler) RemoveFavorite(ctx context.Context, userID int32, cafeID in
 
 	return nil
 }
+
+func (c CafeHandler) GetFavoriteList(ctx context.Context, toInt32 int32) ([]models.Cafe, error) {
+
+	favorites, err := c.FavoriteRepo.GetFavoritesByUserID(ctx, toInt32)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get favorite list. error: %v", err)
+		return nil, err
+	}
+
+	var cafes []models.Cafe
+	for _, favorite := range favorites {
+		cafe, err := c.CafeRepo.GetByID(ctx, favorite.CafeID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get cafe by id. error: %v", err)
+			return nil, err
+		}
+
+		cafes = append(cafes, *cafe)
+	}
+
+	return cafes, nil
+
+}

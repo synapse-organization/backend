@@ -186,6 +186,7 @@ func Run() {
 	cafe.Handle(string(models.GET), "cafe-reservations", authMiddleware.IsAuthorized, cafeHttpHandler.GetCafeReservations)
 	cafe.Handle(string(models.POST), "add-to-favorite", authMiddleware.IsAuthorized, cafeHttpHandler.AddToFavorite)
 	cafe.Handle(string(models.DELETE), "remove-favorite", authMiddleware.IsAuthorized, cafeHttpHandler.RemoveFavorite)
+	cafe.Handle(string(models.GET), "get-favorite-list", authMiddleware.IsAuthorized, cafeHttpHandler.GetFavoriteList)
 
 	//rating
 	cafe.Handle(string(models.POST), "add-rating", authMiddleware.IsAuthorized, cafeHttpHandler.AddRating)

@@ -93,11 +93,11 @@ func (h Cafe) PublicCafeProfile(c *gin.Context) {
 	}
 
 	var userID int32
-    if userIDValue, exists := c.Get("userID"); exists {
-        userID = userIDValue.(int32)
-    } else {
-        userID = 0
-    }
+	if userIDValue, exists := c.Get("userID"); exists {
+		userID = userIDValue.(int32)
+	} else {
+		userID = 0
+	}
 
 	cafe, err := h.Handler.PublicCafeProfile(ctx, int32(cafe_id), userID)
 	if err != nil {
@@ -112,8 +112,6 @@ func (h Cafe) PublicCafeProfile(c *gin.Context) {
 	})
 	return
 }
-
-
 
 type RequestAddComment struct {
 	CafeID  int32  `json:"cafe_id"`
@@ -257,7 +255,6 @@ func (h Cafe) AddMenuItem(c *gin.Context) {
 func (h Cafe) PrivateMenu(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
-
 
 	role, exists := c.Get("role")
 	if !exists {
@@ -788,7 +785,7 @@ func (h Cafe) GetCafeLocation(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": cafe})
 }
 
-func(h Cafe) GetCafeReservations(c *gin.Context) {
+func (h Cafe) GetCafeReservations(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
@@ -966,4 +963,26 @@ func (h Cafe) GetRating(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"rating": ResponseGetRating{Rating: rating, MyRate: myRate}})
+}
+
+func (h Cafe) GetFavoriteList(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Error("Unable to get userID from context")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	favorites, err := h.Handler.GetFavoriteList(ctx, cast.ToInt32(userID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get favorite list. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"favorites": favorites})
+
 }
