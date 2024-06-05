@@ -4,6 +4,7 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
+	"math/rand"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,7 +17,7 @@ type ReservationRepo interface {
 	GetByCafeID(ctx context.Context, cafeID int32) ([]*models.Reservation, error)
 	GetByDate(ctx context.Context, cafeID int32, startTime time.Time, endTime time.Time) (*[]models.Reservation, error)
 	CountByTime(ctx context.Context, cafeID int32, startTime time.Time, endTime time.Time) (int32, error)
-	GetFullyBookedDays(ctx context.Context, cafeID int32, startDate time.Time) ([]time.Time, error)
+	GetFullyBookedDays(ctx context.Context, cafeID int32, startDate time.Time, openingTime int8, closingTime int8) ([]time.Time, error)
 	GetAvailableTimeSlots(ctx context.Context, cafeID int32, day time.Time, cafeCapacity int32, openingTime int8, closingTime int8) ([]map[string]interface{}, error)
 }
 
@@ -45,6 +46,7 @@ func NewReservationRepoImp(postgres *pgxpool.Pool) *ReservationRepoImp {
 }
 
 func (r *ReservationRepoImp) Create(ctx context.Context, reservation *models.Reservation) error {
+	reservation.ID = rand.Int31()
 	_, err := r.postgres.Exec(ctx,
 		`INSERT INTO reservations (id, cafe_id, user_id, transaction_id, start_time, end_time, people)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
@@ -121,30 +123,34 @@ func (r *ReservationRepoImp) CountByTime(ctx context.Context, cafeID int32, star
 	return totalPeople, nil
 }
 
-func (r *ReservationRepoImp) GetFullyBookedDays(ctx context.Context, cafeID int32, startDate time.Time) ([]time.Time, error) {
-	query := `
-		SELECT date_trunc('day', start_time) AS day, COUNT(*)
-		FROM reservations
-		WHERE cafe_id = $1 AND start_time >= $2
-		GROUP BY day HAVING COUNT(*) >= 24`
+func (r *ReservationRepoImp) GetFullyBookedDays(ctx context.Context, cafeID int32, startDate time.Time, openingTime int8, closingTime int8) ([]time.Time, error) {
+    query := `
+        SELECT date_trunc('day', start_time) AS day, COUNT(*)
+        FROM reservations
+        WHERE cafe_id = $1 AND start_time >= $2 AND
+              EXTRACT(HOUR FROM start_time) >= $3 AND EXTRACT(HOUR FROM start_time) < $4
+        GROUP BY day
+        HAVING COUNT(*) >= ($4 - $3)
+    `
 
-	rows, err := r.postgres.Query(ctx, query, cafeID, startDate)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+    rows, err := r.postgres.Query(ctx, query, cafeID, startDate, openingTime, closingTime)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
 
-	var fullyBookedDays []time.Time
-	for rows.Next() {
-		var day time.Time
-		if err := rows.Scan(&day); err != nil {
-			return nil, err
-		}
-		fullyBookedDays = append(fullyBookedDays, day)
-	}
+    var fullyBookedDays []time.Time
+    for rows.Next() {
+        var day time.Time
+        if err := rows.Scan(&day); err != nil {
+            return nil, err
+        }
+        fullyBookedDays = append(fullyBookedDays, day)
+    }
 
-	return fullyBookedDays, nil
+    return fullyBookedDays, nil
 }
+
 
 func (r *ReservationRepoImp) GetAvailableTimeSlots(ctx context.Context, cafeID int32, day time.Time, cafeCapacity int32, openingTime int8, closingTime int8) ([]map[string]interface{}, error) {
     dayStart := day.Add(time.Duration(openingTime) * time.Hour)
