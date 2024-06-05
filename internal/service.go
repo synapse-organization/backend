@@ -171,7 +171,7 @@ func Run() {
 	cafe.Handle(string(models.POST), "create-event", authMiddleware.IsAuthorized, cafeHttpHandler.CreateEvent)
 	cafe.Handle(string(models.POST), "add-menu-item", authMiddleware.IsAuthorized, cafeHttpHandler.AddMenuItem)
 	cafe.Handle(string(models.GET), "home", cafeHttpHandler.Home)
-	cafe.Handle(string(models.GET), "private-menu", cafeHttpHandler.PrivateMenu)
+	cafe.Handle(string(models.GET), "private-menu", authMiddleware.IsAuthorized, cafeHttpHandler.PrivateMenu)
 	cafe.Handle(string(models.GET), "public-menu", cafeHttpHandler.PublicMenu)
 	cafe.Handle(string(models.PATCH), "edit-menu-item", authMiddleware.IsAuthorized, cafeHttpHandler.EditMenuItem)
 	cafe.Handle(string(models.DELETE), "delete-menu-item", authMiddleware.IsAuthorized, cafeHttpHandler.DeleteMenuItem)
