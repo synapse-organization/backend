@@ -195,7 +195,7 @@ func (r *ReservationRepoImp) GetAvailableTimeSlots(ctx context.Context, cafeID i
 func (r *ReservationRepoImp) GetByDate(ctx context.Context, cafeID int32, startTime time.Time, endTime time.Time) (*[]models.Reservation, error) {
 	rows, err := r.postgres.Query(ctx,
 		`SELECT *
-		FROM reservation
+		FROM reservations
 		WHERE cafe_id = $1
 		AND start_time >= $2
 		AND end_time <= $3
