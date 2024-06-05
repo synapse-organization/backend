@@ -766,6 +766,7 @@ type RequestEditCafe struct {
 	ContactInfo   models.ContactInfo       `json:"contact_info"`
 	Categories    []models.CafeCategory    `json:"categories"`
 	Amenities     []models.AmenityCategory `json:"amenities"`
+	ReservationPrice float64 `json:"reservation_price"`
 }
 
 func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) error {
@@ -919,6 +920,14 @@ func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) erro
 		}
 	}
 
+	if preCafe.ReservationPrice != newCafe.ReservationPrice {
+		err = c.CafeRepo.Update(ctx, newCafe.ID, repo.UpdateCafeReservationPrice, newCafe.ReservationPrice)
+		if err != nil {
+			log.GetLog().Errorf("Unable to update cafe reservation price. error: %v", err)
+			return err
+		}
+	}
+
 	return err
 }
 
@@ -1019,7 +1028,13 @@ func (c CafeHandler) DeleteEvent(ctx context.Context, eventID int32) error {
 }
 
 func (c CafeHandler) GetFullyBookedDays(ctx context.Context, cafeID int32, startDate time.Time) ([]time.Time, error) {
-	return c.ReservationRepo.GetFullyBookedDays(ctx, cafeID, startDate)
+    cafe, err := c.CafeRepo.GetByID(ctx, cafeID)
+    if err != nil {
+        log.GetLog().Errorf("Unable to get cafe. error: %v", err)
+        return nil, err
+    }
+
+    return c.ReservationRepo.GetFullyBookedDays(ctx, cafeID, startDate, cafe.OpeningTime, cafe.ClosingTime)
 }
 
 func (c CafeHandler) GetAvailableTimeSlots(ctx context.Context, cafeID int32, day time.Time) ([]map[string]interface{}, error) {
