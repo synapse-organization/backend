@@ -292,6 +292,7 @@ func (h Cafe) PrivateMenu(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"categories": categories,
 		"menu":       menu,
+		"cafe_id":    cafe.ID,
 		"cafe_name":  cafeName,
 		"cafe_image": cafeImage,
 	})
