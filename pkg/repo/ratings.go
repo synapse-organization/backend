@@ -4,6 +4,8 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"context"
+	"errors"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -57,6 +59,7 @@ func (r *RatingsRepoImp) GetByID(ctx context.Context, id int32) (*models.Rating,
 
 func (r *RatingsRepoImp) GetByCafeID(ctx context.Context, cafeID int32) ([]*models.Rating, error) {
 	rows, err := r.postgres.Query(ctx, "SELECT id, cafe_id, user_id, rating FROM ratings WHERE cafe_id = $1", cafeID)
+
 	if err != nil {
 		log.GetLog().Errorf("Unable to get ratings by cafe id. error: %v", err)
 	}
@@ -143,6 +146,15 @@ func (r *RatingsRepoImp) GetNTopRatings(ctx context.Context, n int32) ([]int32, 
 func (r *RatingsRepoImp) GetRatingByUserIDAndCafeID(ctx context.Context, userID, cafeID int32) (*models.Rating, error) {
 	var rating models.Rating
 	err := r.postgres.QueryRow(ctx, "SELECT id, cafe_id, user_id, rating FROM ratings WHERE user_id = $1 AND cafe_id = $2", userID, cafeID).Scan(&rating.ID, &rating.CafeID, &rating.UserID, &rating.Rating)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return &models.Rating{
+			UserID: userID,
+			CafeID: cafeID,
+			Rating: 0,
+		}, nil
+	}
+
 	if err != nil {
 		log.GetLog().Errorf("Unable to get rating by user id and cafe id. error: %v", err)
 	}

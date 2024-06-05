@@ -190,7 +190,7 @@ func Run() {
 
 	//rating
 	cafe.Handle(string(models.POST), "add-rating", authMiddleware.IsAuthorized, cafeHttpHandler.AddRating)
-	cafe.Handle(string(models.GET), "get-cafe-rating", cafeHttpHandler.GetRating)
+	cafe.Handle(string(models.GET), "get-cafe-rating", authMiddleware.IsAuthorized, cafeHttpHandler.GetRating)
 
 	// location
 	cafe.Handle(string(models.POST), "get-nearest-cafes", cafeHttpHandler.GetNearestCafes)
