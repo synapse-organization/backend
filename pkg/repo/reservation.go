@@ -167,6 +167,7 @@ func (r *ReservationRepoImp) GetAvailableTimeSlots(ctx context.Context, cafeID i
         LEFT JOIN reservations ON time_slots.slot_time = reservations.start_time AND reservations.cafe_id = $1
         GROUP BY time_slots.slot_time
         HAVING ($4 - COALESCE(SUM(reservations.people), 0)) > 0
+		ORDER BY time_slots.slot_time
     `
 
     rows, err := r.postgres.Query(ctx, query, cafeID, dayStart, dayEnd, cafeCapacity)
