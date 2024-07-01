@@ -84,11 +84,11 @@ func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
 	return nil
 }
 
-func (u UserHandler) Login(ctx context.Context, user *models.User) (map[string]string, error) {
+func (u UserHandler) Login(ctx context.Context, user *models.User) (map[string]string, bool, error) {
 	foundUsers, err := u.UserRepo.GetByEmail(ctx, user.Email)
 	if err != nil {
 		log.GetLog().Errorf("Incorrect name or password. error: %v", err)
-		return nil, err
+		return nil, false, err
 	}
 	var correctUsers []*models.User
 	for _, foundUser := range foundUsers {
@@ -97,9 +97,10 @@ func (u UserHandler) Login(ctx context.Context, user *models.User) (map[string]s
 		}
 	}
 	if len(correctUsers) == 0 {
-		return nil, errors.ErrPasswordIncorrect.Error()
+		return nil, false, errors.ErrPasswordIncorrect.Error()
 	}
 
+	var isCompleted bool
 	tokens := map[string]string{}
 	for _, foundUser := range correctUsers {
 		claims, token, err := utils.TokenGenerator(foundUser.ID, foundUser.Email, foundUser.FirstName, foundUser.LastName, int32(foundUser.Role))
@@ -111,12 +112,15 @@ func (u UserHandler) Login(ctx context.Context, user *models.User) (map[string]s
 		err = u.TokenRepo.Create(ctx, claims.TokenID, token, foundUser.ID, expiresAt)
 		if err != nil {
 			log.GetLog().Errorf("Unable to create token. error: %v", err)
-			return nil, err
+			return nil, false, err
 		}
 		tokens[models.RoleToString(foundUser.Role)] = token
+		if foundUser.Role == models.ManagerRole && foundUser.NationalID != "" && foundUser.BankAccount != "" {
+			isCompleted = true
+		}
 	}
 
-	return tokens, nil
+	return tokens, isCompleted, nil
 }
 
 func (u UserHandler) VerifyEmail(ctx context.Context, email string) error {
