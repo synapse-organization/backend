@@ -65,7 +65,7 @@ func (u User) Login(c *gin.Context) {
 		return
 	}
 
-	tokens, err := u.Handler.Login(ctx, &user)
+	tokens, isCompleted, err := u.Handler.Login(ctx, &user)
 	if err != nil {
 		if !utils.IsCommonError(err) {
 			log.GetLog().WithError(err).Error("Unable to sign up")
@@ -78,8 +78,9 @@ func (u User) Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status": "ok",
-		"token":  tokens,
+		"status":       "ok",
+		"token":        tokens,
+		"is_completed": isCompleted,
 	})
 	return
 }
