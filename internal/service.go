@@ -95,7 +95,10 @@ func Run() {
 
 	userRepo := repo.NewUserRepoImp(postgres)
 	tokenRepo := repo.NewTokenRepoImp(postgres)
-	UserHandler := modules.UserHandler{UserRepo: userRepo, TokenRepo: tokenRepo, Postgres: postgres}
+	cafeRepo := repo.NewCafeRepoImp(postgres)
+	paymentRepo := repo.NewTransactionImp(postgres)
+	reservationRepo := repo.NewReservationRepoImp(postgres)
+	UserHandler := modules.UserHandler{UserRepo: userRepo, TokenRepo: tokenRepo, ReservationRepo: reservationRepo, CafeRepo: cafeRepo, Postgres: postgres}
 	userHttpHandler := http.User{Handler: &UserHandler}
 
 	user := apiV1.Group("/user")
@@ -109,14 +112,12 @@ func Run() {
 	user.Handle(string(models.GET), "user-profile", authMiddleware.IsAuthorized, userHttpHandler.UserProfile)
 	user.Handle(string(models.PATCH), "edit-profile", authMiddleware.IsAuthorized, userHttpHandler.EditProfile)
 	user.Handle(string(models.POST), "manager-agreement", authMiddleware.IsAuthorized, userHttpHandler.ManagerAgreement)
+	user.Handle(string(models.GET), "user-reservations", authMiddleware.IsAuthorized, userHttpHandler.UserReservations)
 
-	cafeRepo := repo.NewCafeRepoImp(postgres)
 	imageRepo := repo.NewImageRepoImp(postgres)
 	ratingRepo := repo.NewRatingsRepoImp(postgres)
 	commentRepo := repo.NewCommentsRepoImp(postgres)
-	paymentRepo := repo.NewTransactionImp(postgres)
 	eventRepo := repo.NewEventRepoImp(postgres)
-	reservationRepo := repo.NewReservationRepoImp(postgres)
 	menuItemRepo := repo.NewMenuItemRepoImp(postgres)
 	locationRepo := repo.NewLocationsRepoImp(postgres)
 	favoriteRepo := repo.NewFavoritesRepoImp(postgres)
