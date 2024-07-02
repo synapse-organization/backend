@@ -342,3 +342,25 @@ func (u User) ManagerAgreement(c *gin.Context) {
 	return
 
 }
+
+func (u User) UserReservations(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get token ID.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error()})
+		return
+	}
+
+	userReservations, err := u.Handler.UserReservations(ctx, userID.(int32))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get user reservations. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"reservations": userReservations})
+	return
+}

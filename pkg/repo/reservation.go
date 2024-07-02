@@ -13,7 +13,7 @@ import (
 type ReservationRepo interface {
 	Create(ctx context.Context, reservation *models.Reservation) error
 	GetByID(ctx context.Context, id int32) (*models.Reservation, error)
-	GetByUserID(ctx context.Context, userID int32) ([]*models.Reservation, error)
+	GetByUserID(ctx context.Context, userID int32) (*[]models.Reservation, error)
 	GetByCafeID(ctx context.Context, cafeID int32) ([]*models.Reservation, error)
 	GetByDate(ctx context.Context, cafeID int32, startTime time.Time, endTime time.Time) (*[]models.Reservation, error)
 	CountByTime(ctx context.Context, cafeID int32, startTime time.Time, endTime time.Time) (int32, error)
@@ -66,14 +66,14 @@ func (r *ReservationRepoImp) GetByID(ctx context.Context, id int32) (*models.Res
 	return &reservation, err
 }
 
-func (r *ReservationRepoImp) GetByUserID(ctx context.Context, userID int32) ([]*models.Reservation, error) {
+func (r *ReservationRepoImp) GetByUserID(ctx context.Context, userID int32) (*[]models.Reservation, error) {
 	rows, err := r.postgres.Query(ctx, "SELECT id, cafe_id, user_id, transaction_id, start_time, end_time, people FROM reservations WHERE user_id = $1", userID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get reservations by user id. error: %v", err)
 	}
 	defer rows.Close()
 
-	var reservations []*models.Reservation
+	var reservations []models.Reservation
 	for rows.Next() {
 		var reservation models.Reservation
 		err = rows.Scan(&reservation.ID, &reservation.CafeID, &reservation.UserID, &reservation.TransactionID, &reservation.StartTime, &reservation.EndTime, &reservation.People)
@@ -81,9 +81,9 @@ func (r *ReservationRepoImp) GetByUserID(ctx context.Context, userID int32) ([]*
 			log.GetLog().Errorf("Unable to scan reservation. error: %v", err)
 			break
 		}
-		reservations = append(reservations, &reservation)
+		reservations = append(reservations, reservation)
 	}
-	return reservations, err
+	return &reservations, err
 }
 
 func (r *ReservationRepoImp) GetByCafeID(ctx context.Context, cafeID int32) ([]*models.Reservation, error) {

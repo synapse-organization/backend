@@ -9,16 +9,19 @@ import (
 	"context"
 	go_error "errors"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UserHandler struct {
 	UserRepo  repo.UsersRepo
 	TokenRepo repo.TokensRepo
+	ReservationRepo repo.ReservationRepo
+	CafeRepo        repo.CafesRepo
 	Postgres  *pgxpool.Pool
 }
 
@@ -327,4 +330,42 @@ func (u UserHandler) ManagerAgreement(ctx context.Context, userID int32, nationa
 	}
 	return nil
 
+}
+
+type UserReservation struct {
+	CafeID    int32     `json:"cafe_id"`
+	CafeName  string    `json:"cafe_name"`
+	StartTime time.Time `json:"start_time"`
+	EndTime   time.Time `json:"end_time"`
+	People    int32     `json:"people"`
+	ReservationPrice float64 `json:"reservation_price"`
+}
+
+func (u UserHandler) UserReservations(ctx context.Context, userID int32) ([]UserReservation, error) {
+	reservations, err := u.ReservationRepo.GetByUserID(ctx, userID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get user's reservations. error: %v", err)
+		return nil, err
+	}
+
+	userReservations := []UserReservation{}
+
+	for _, reservation := range *reservations {
+		cafe, err := u.CafeRepo.GetByID(ctx, reservation.CafeID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get cafe by id. error: %v", err)
+			return nil, err
+		}
+
+		userReservations = append(userReservations, UserReservation{
+			CafeID: reservation.CafeID,
+			CafeName: cafe.Name,
+			StartTime: reservation.StartTime,
+			EndTime: reservation.EndTime,
+			People: reservation.People,
+			ReservationPrice: cafe.ReservationPrice,
+		})
+	}
+
+	return userReservations, nil
 }
