@@ -1128,7 +1128,7 @@ type ReservationInfo struct {
 }
 
 func (c CafeHandler) GetCafeReservations(ctx context.Context, cafe *models.Cafe, day time.Time) ([]ReservationInfo, error) {
-	reservations, err := c.ReservationRepo.GetByDate(ctx, cafe.ID, day, day.Add(time.Hour*24))
+	reservations, err := c.ReservationRepo.GetByDateCafeID(ctx, cafe.ID, day, day.Add(time.Hour*24))
 	if err != nil {
 		log.GetLog().Errorf("Unable to get reservations by cafe id. error: %v", err)
 		return nil, err

@@ -341,8 +341,8 @@ type UserReservation struct {
 	ReservationPrice float64 `json:"reservation_price"`
 }
 
-func (u UserHandler) UserReservations(ctx context.Context, userID int32) ([]UserReservation, error) {
-	reservations, err := u.ReservationRepo.GetByUserID(ctx, userID)
+func (u UserHandler) UserReservations(ctx context.Context, userID int32, day time.Time) ([]UserReservation, error) {
+	reservations, err := u.ReservationRepo.GetByDateUserID(ctx, userID, day, day.Add(time.Hour*24))
 	if err != nil {
 		log.GetLog().Errorf("Unable to get user's reservations. error: %v", err)
 		return nil, err
