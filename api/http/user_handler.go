@@ -340,7 +340,6 @@ func (u User) ManagerAgreement(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	return
-
 }
 
 func (u User) UserReservations(c *gin.Context) {
@@ -354,7 +353,15 @@ func (u User) UserReservations(c *gin.Context) {
 		return
 	}
 
-	userReservations, err := u.Handler.UserReservations(ctx, userID.(int32))
+	dayStr := c.Query("day")
+	day, err := time.Parse("2006-01-02", dayStr)
+	if err != nil {
+		log.GetLog().Errorf("Unable to parse day. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid day format"})
+		return
+	}
+
+	userReservations, err := u.Handler.UserReservations(ctx, userID.(int32), day)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get user reservations. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

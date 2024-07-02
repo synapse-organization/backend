@@ -15,7 +15,8 @@ type ReservationRepo interface {
 	GetByID(ctx context.Context, id int32) (*models.Reservation, error)
 	GetByUserID(ctx context.Context, userID int32) (*[]models.Reservation, error)
 	GetByCafeID(ctx context.Context, cafeID int32) ([]*models.Reservation, error)
-	GetByDate(ctx context.Context, cafeID int32, startTime time.Time, endTime time.Time) (*[]models.Reservation, error)
+	GetByDateCafeID(ctx context.Context, cafeID int32, startTime time.Time, endTime time.Time) (*[]models.Reservation, error)
+	GetByDateUserID(ctx context.Context, userID int32, startTime time.Time, endTime time.Time) (*[]models.Reservation, error)
 	CountByTime(ctx context.Context, cafeID int32, startTime time.Time, endTime time.Time) (int32, error)
 	GetFullyBookedDays(ctx context.Context, cafeID int32, startDate time.Time, openingTime int8, closingTime int8) ([]time.Time, error)
 	GetAvailableTimeSlots(ctx context.Context, cafeID int32, day time.Time, cafeCapacity int32, openingTime int8, closingTime int8) ([]map[string]interface{}, error)
@@ -192,18 +193,17 @@ func (r *ReservationRepoImp) GetAvailableTimeSlots(ctx context.Context, cafeID i
     return timeSlots, nil
 }
 
-
-func (r *ReservationRepoImp) GetByDate(ctx context.Context, cafeID int32, startTime time.Time, endTime time.Time) (*[]models.Reservation, error) {
+func (r *ReservationRepoImp) GetByDateUserID(ctx context.Context, userID int32, startTime time.Time, endTime time.Time) (*[]models.Reservation, error) {
 	rows, err := r.postgres.Query(ctx,
 		`SELECT *
 		FROM reservations
-		WHERE cafe_id = $1
+		WHERE user_id = $1
 		AND start_time >= $2
 		AND end_time <= $3
 		ORDER BY start_time, end_time`,
-		cafeID, startTime, endTime)
+		userID, startTime, endTime)
 	if err != nil {
-		log.GetLog().Errorf("Unable to get reservation by date. error: %v", err)
+		log.GetLog().Errorf("Unable to get reservation by date & user id. error: %v", err)
 		return nil, err
 	}
 
@@ -213,6 +213,34 @@ func (r *ReservationRepoImp) GetByDate(ctx context.Context, cafeID int32, startT
 		err = rows.Scan(&reservation.ID, &reservation.CafeID, &reservation.UserID, &reservation.TransactionID, &reservation.StartTime, &reservation.EndTime, &reservation.People)
 		if err != nil {
 			log.GetLog().Errorf("Unable to get reservation by date. error: %v", err)
+			return nil, err
+		}
+		reservations = append(reservations, reservation)
+	}
+
+	return &reservations, nil
+}
+
+func (r *ReservationRepoImp) GetByDateCafeID(ctx context.Context, cafeID int32, startTime time.Time, endTime time.Time) (*[]models.Reservation, error) {
+	rows, err := r.postgres.Query(ctx,
+		`SELECT *
+		FROM reservations
+		WHERE cafe_id = $1
+		AND start_time >= $2
+		AND end_time <= $3
+		ORDER BY start_time, end_time`,
+		cafeID, startTime, endTime)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get reservation by date & cafe id. error: %v", err)
+		return nil, err
+	}
+
+	var reservations []models.Reservation
+	for rows.Next() {
+		reservation := models.Reservation{}
+		err = rows.Scan(&reservation.ID, &reservation.CafeID, &reservation.UserID, &reservation.TransactionID, &reservation.StartTime, &reservation.EndTime, &reservation.People)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get reservation by date & cafe id. error: %v", err)
 			return nil, err
 		}
 		reservations = append(reservations, reservation)
