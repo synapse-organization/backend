@@ -125,8 +125,8 @@ func (r *ReservationRepoImp) CountByTime(ctx context.Context, cafeID int32, star
 }
 
 func (r *ReservationRepoImp) GetFullyBookedDays(ctx context.Context, cafeID int32, startDate time.Time, openingTime int8, closingTime int8) ([]time.Time, error) {
-    query := `
-        SELECT date_trunc('day', start_time) AS day, COUNT(*)
+	query := `
+        SELECT date_trunc('day', start_time) AS day
         FROM reservations
         WHERE cafe_id = $1 AND start_time >= $2 AND
               EXTRACT(HOUR FROM start_time) >= $3 AND EXTRACT(HOUR FROM start_time) < $4
@@ -134,30 +134,31 @@ func (r *ReservationRepoImp) GetFullyBookedDays(ctx context.Context, cafeID int3
         HAVING COUNT(*) >= ($4 - $3)
     `
 
-    rows, err := r.postgres.Query(ctx, query, cafeID, startDate, openingTime, closingTime)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	rows, err := r.postgres.Query(ctx, query, cafeID, startDate, openingTime, closingTime)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get fully booked days. error: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
 
-    var fullyBookedDays []time.Time
-    for rows.Next() {
-        var day time.Time
-        if err := rows.Scan(&day); err != nil {
-            return nil, err
-        }
-        fullyBookedDays = append(fullyBookedDays, day)
-    }
+	var fullyBookedDays []time.Time
+	for rows.Next() {
+		var day time.Time
+		if err := rows.Scan(&day); err != nil {
+			log.GetLog().Errorf("Unable to scan into day. error: %v", err)
+			return nil, err
+		}
+		fullyBookedDays = append(fullyBookedDays, day)
+	}
 
-    return fullyBookedDays, nil
+	return fullyBookedDays, nil
 }
 
-
 func (r *ReservationRepoImp) GetAvailableTimeSlots(ctx context.Context, cafeID int32, day time.Time, cafeCapacity int32, openingTime int8, closingTime int8) ([]map[string]interface{}, error) {
-    dayStart := day.Add(time.Duration(openingTime) * time.Hour)
-    dayEnd := day.Add(time.Duration(closingTime-1) * time.Hour)
+	dayStart := day.Add(time.Duration(openingTime) * time.Hour)
+	dayEnd := day.Add(time.Duration(closingTime-1) * time.Hour)
 
-    query := `
+	query := `
         WITH time_slots AS (
             SELECT generate_series($2::timestamp, $3::timestamp, '1 hour') AS slot_time
         )
@@ -171,26 +172,26 @@ func (r *ReservationRepoImp) GetAvailableTimeSlots(ctx context.Context, cafeID i
 		ORDER BY time_slots.slot_time
     `
 
-    rows, err := r.postgres.Query(ctx, query, cafeID, dayStart, dayEnd, cafeCapacity)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	rows, err := r.postgres.Query(ctx, query, cafeID, dayStart, dayEnd, cafeCapacity)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    var timeSlots []map[string]interface{}
-    for rows.Next() {
-        var slotTime time.Time
-        var remainingCapacity int32
-        if err := rows.Scan(&slotTime, &remainingCapacity); err != nil {
-            return nil, err
-        }
-        timeSlots = append(timeSlots, map[string]interface{}{
-            "slot_time":         slotTime,
-            "remaining_capacity": remainingCapacity,
-        })
-    }
+	var timeSlots []map[string]interface{}
+	for rows.Next() {
+		var slotTime time.Time
+		var remainingCapacity int32
+		if err := rows.Scan(&slotTime, &remainingCapacity); err != nil {
+			return nil, err
+		}
+		timeSlots = append(timeSlots, map[string]interface{}{
+			"slot_time":          slotTime,
+			"remaining_capacity": remainingCapacity,
+		})
+	}
 
-    return timeSlots, nil
+	return timeSlots, nil
 }
 
 func (r *ReservationRepoImp) GetByDateUserID(ctx context.Context, userID int32, startTime time.Time, endTime time.Time) (*[]models.Reservation, error) {
