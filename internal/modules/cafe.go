@@ -67,6 +67,7 @@ func (c CafeHandler) SearchCafe(ctx context.Context, name string, address string
 
 	for i, cafe := range cafes {
 		c22, err := c.LocationsRepo.GetCafeLocation(ctx, cafe.ID)
+		fmt.Println(cafe.ID, c22)
 		if err != nil {
 			log.GetLog().Errorf("Unable to get cafe rating. error: %v", err)
 			continue
@@ -628,6 +629,18 @@ func (c CafeHandler) Home(ctx context.Context) ([]models.Cafe, []*models.Comment
 	ds, err := c.CafeRepo.GetByCafeIDs(ctx, cafes)
 	if err != nil {
 		return nil, nil, nil, err
+	}
+
+	for i := range ds {
+		images, err := c.ImageRepo.GetByReferenceID(ctx, ds[i].ID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get cafe images. error: %v", err)
+			continue
+		}
+
+		for _, image := range images {
+			ds[i].Images = append(ds[i].Images, image.ID)
+		}
 	}
 
 	comments, err := c.CommentRepo.GetLast(ctx, 0, 5, 0)

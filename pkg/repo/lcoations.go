@@ -59,7 +59,7 @@ func (r *LocationsRepoImp) FindAll(ctx context.Context) ([]*models.Location, err
 func (r *LocationsRepoImp) GetCafeLocation(ctx context.Context, id int32) (models.Location, error) {
 	var location models.Location
 	err := r.postgres.QueryRow(ctx, "SELECT id, latitude, longitude FROM locations where id=$1", id).Scan(&location.CafeID, &location.Lat, &location.Lng)
-	if err != nil {
+	if err != nil && err.Error() != "no rows in result set" {
 		log.GetLog().Errorf("Unable to get locations. error: %v", err)
 		return location, err
 	}
