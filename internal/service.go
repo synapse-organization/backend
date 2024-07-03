@@ -133,6 +133,7 @@ func Run() {
 		MenuItemRepo:    menuItemRepo,
 		PaymentRepo:     paymentRepo,
 		FavoriteRepo:    favoriteRepo,
+		LocationsRepo:   locationRepo,
 		Redis:           rdb,
 	}
 	cafeHttpHandler := http.Cafe{Handler: &cafeHandler, Rating: ratingRepo, ImageRepo: imageRepo}
