@@ -18,11 +18,11 @@ import (
 )
 
 type UserHandler struct {
-	UserRepo  repo.UsersRepo
-	TokenRepo repo.TokensRepo
+	UserRepo        repo.UsersRepo
+	TokenRepo       repo.TokensRepo
 	ReservationRepo repo.ReservationRepo
 	CafeRepo        repo.CafesRepo
-	Postgres  *pgxpool.Pool
+	Postgres        *pgxpool.Pool
 }
 
 const (
@@ -333,12 +333,12 @@ func (u UserHandler) ManagerAgreement(ctx context.Context, userID int32, nationa
 }
 
 type UserReservation struct {
-	CafeID    int32     `json:"cafe_id"`
-	CafeName  string    `json:"cafe_name"`
-	StartTime time.Time `json:"start_time"`
-	EndTime   time.Time `json:"end_time"`
-	People    int32     `json:"people"`
-	ReservationPrice float64 `json:"reservation_price"`
+	CafeID           int32     `json:"cafe_id"`
+	CafeName         string    `json:"cafe_name"`
+	StartTime        time.Time `json:"start_time"`
+	EndTime          time.Time `json:"end_time"`
+	People           int32     `json:"people"`
+	ReservationPrice float64   `json:"reservation_price"`
 }
 
 func (u UserHandler) UserReservations(ctx context.Context, userID int32, day time.Time) ([]UserReservation, error) {
@@ -358,11 +358,11 @@ func (u UserHandler) UserReservations(ctx context.Context, userID int32, day tim
 		}
 
 		userReservations = append(userReservations, UserReservation{
-			CafeID: reservation.CafeID,
-			CafeName: cafe.Name,
-			StartTime: reservation.StartTime,
-			EndTime: reservation.EndTime,
-			People: reservation.People,
+			CafeID:           reservation.CafeID,
+			CafeName:         cafe.Name,
+			StartTime:        reservation.StartTime,
+			EndTime:          reservation.EndTime,
+			People:           reservation.People,
 			ReservationPrice: cafe.ReservationPrice,
 		})
 	}
