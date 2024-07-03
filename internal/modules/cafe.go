@@ -1056,15 +1056,27 @@ func (c CafeHandler) DeleteEvent(ctx context.Context, eventID int32) error {
 	return err
 }
 
-func (c CafeHandler) GetFullyBookedDays(ctx context.Context, cafeID int32, startDate time.Time) ([]time.Time, error) {
+func (c CafeHandler) GetFullyBookedDays(ctx context.Context, cafeID int32, startDate time.Time) ([]string, error) {
 	cafe, err := c.CafeRepo.GetByID(ctx, cafeID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get cafe. error: %v", err)
 		return nil, err
 	}
 
-	return c.ReservationRepo.GetFullyBookedDays(ctx, cafeID, startDate, cafe.OpeningTime, cafe.ClosingTime)
+	bookedDays, err := c.ReservationRepo.GetFullyBookedDays(ctx, cafeID, startDate, cafe.OpeningTime, cafe.ClosingTime)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get fully booked days. error: %v", err)
+		return nil, err
+	}
+
+	var bookedDates []string
+	for _, day := range bookedDays {
+		bookedDates = append(bookedDates, day.Format("2006-01-02"))
+	}
+
+	return bookedDates, nil
 }
+
 
 func (c CafeHandler) GetAvailableTimeSlots(ctx context.Context, cafeID int32, day time.Time) ([]map[string]interface{}, error) {
 	cafe, err := c.CafeRepo.GetByID(ctx, cafeID)
