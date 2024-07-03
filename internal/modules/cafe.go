@@ -67,7 +67,6 @@ func (c CafeHandler) SearchCafe(ctx context.Context, name string, address string
 
 	for i, cafe := range cafes {
 		c22, err := c.LocationsRepo.GetCafeLocation(ctx, cafe.ID)
-		fmt.Println(cafe.ID, c22)
 		if err != nil {
 			log.GetLog().Errorf("Unable to get cafe rating. error: %v", err)
 			continue
@@ -655,6 +654,14 @@ func (c CafeHandler) Home(ctx context.Context) ([]models.Cafe, []*models.Comment
 		return nil, nil, nil, err
 	}
 
+	for i := range event {
+		ds, err := c.CafeRepo.GetByCafeIDs(ctx, []int32{event[i].CafeID})
+		if err != nil {
+			continue
+		}
+		event[i].CafeName = ds[0].Name
+	}
+
 	return ds, comments, event, nil
 }
 
@@ -1076,7 +1083,6 @@ func (c CafeHandler) GetFullyBookedDays(ctx context.Context, cafeID int32, start
 
 	return bookedDates, nil
 }
-
 
 func (c CafeHandler) GetAvailableTimeSlots(ctx context.Context, cafeID int32, day time.Time) ([]map[string]interface{}, error) {
 	cafe, err := c.CafeRepo.GetByID(ctx, cafeID)
