@@ -5,6 +5,7 @@ import "time"
 type Event struct {
 	ID               int32     `json:"id"`
 	CafeID           int32     `json:"cafe_id"`
+	CafeName         string    `json:"cafe_name"`
 	Name             string    `json:"name"`
 	Description      string    `json:"description"`
 	StartTime        time.Time `json:"start_time"`
@@ -17,8 +18,8 @@ type Event struct {
 }
 
 type EventReservation struct {
-	ID      int32 `json:"id"`
-	UserID  int32 `json:"user_id"`
-	EventID int32 `json:"event_id"`
+	ID            int32  `json:"id"`
+	UserID        int32  `json:"user_id"`
+	EventID       int32  `json:"event_id"`
 	TransactionID string `json:"transaction_id"`
 }
