@@ -1120,7 +1120,7 @@ func (c CafeHandler) SetCafeLocation(ctx context.Context, m *models.Location) er
 	return c.LocationsRepo.SetLocation(ctx, m)
 }
 
-func (c CafeHandler) GetCafeLocation(ctx context.Context, id int32) (*models.Location, error) {
+func (c CafeHandler) GetCafeLocation(ctx context.Context, id int32) (models.Location, error) {
 	return c.LocationsRepo.GetCafeLocation(ctx, id)
 }
 
