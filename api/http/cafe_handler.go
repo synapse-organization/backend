@@ -5,6 +5,7 @@ import (
 	"barista/pkg/errors"
 	"barista/pkg/log"
 	"barista/pkg/models"
+	"barista/pkg/repo"
 	"context"
 	"fmt"
 	"net/http"
@@ -17,7 +18,9 @@ import (
 )
 
 type Cafe struct {
-	Handler *modules.CafeHandler
+	Handler   *modules.CafeHandler
+	Rating    repo.RatingsRepo
+	ImageRepo repo.ImageRepo
 }
 
 func (h Cafe) Create(c *gin.Context) {
@@ -400,13 +403,13 @@ func (h Cafe) DeleteMenuItem(c *gin.Context) {
 }
 
 func (h Cafe) Home(c *gin.Context) {
-	cafe, comments, err := h.Handler.Home(c)
+	cafe, comments, events, err := h.Handler.Home(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"cafes": cafe, "comments": comments})
+	c.JSON(http.StatusOK, gin.H{"cafes": cafe, "comments": comments, "events": events})
 }
 
 type RequestReserveEvent struct {
@@ -982,6 +985,25 @@ func (h Cafe) GetFavoriteList(c *gin.Context) {
 		log.GetLog().Errorf("Unable to get favorite list. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	for i, cafe := range favorites {
+		favorites[i].Rating, err = h.Rating.GetCafesRating(ctx, cafe.ID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get cafe rating. error: %v", err)
+		}
+	}
+
+	for i := range favorites {
+		images, err := h.ImageRepo.GetByReferenceID(ctx, favorites[i].ID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get cafe images. error: %v", err)
+			continue
+		}
+
+		for _, image := range images {
+			favorites[i].Images = append(favorites[i].Images, image.ID)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"favorites": favorites})
