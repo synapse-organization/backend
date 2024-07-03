@@ -27,6 +27,7 @@ type EventRepo interface {
 	GetEventByID(ctx context.Context, id int32) (*models.Event, error)
 	GetEventsByCafeID(ctx context.Context, cafeID int32) ([]*models.Event, error)
 	GetEventsByUserID(ctx context.Context, userID int32) ([]*models.Event, error)
+	GetAllEventsNearestStartTime(ctx context.Context, limit int32) ([]*models.Event, error)
 	UpdateEvent(ctx context.Context, id int32, updateEventType UpdateEventType, value interface{}) error
 	DeleteByID(ctx context.Context, id int32) error
 }
@@ -119,6 +120,26 @@ func (e *EventRepoImp) GetEventsByUserID(ctx context.Context, userID int32) ([]*
 	rows, err := e.postgres.Query(ctx, "SELECT e.id, e.cafe_id, e.name, e.description, e.start_time, e.end_time, e.price, e.capacity, e.current_attendees, e.reservable FROM events e JOIN event_reservations ep ON e.id = ep.event_id WHERE ep.user_id = $1", userID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get events by user id. error: %v", err)
+	}
+	defer rows.Close()
+
+	var events []*models.Event
+	for rows.Next() {
+		var event models.Event
+		err = rows.Scan(&event.ID, &event.CafeID, &event.Name, &event.Description, &event.StartTime, &event.EndTime, &event.Price, &event.Capacity, &event.CurrentAttendees, &event.Reservable)
+		if err != nil {
+			log.GetLog().Errorf("Unable to scan event. error: %v", err)
+			return nil, err
+		}
+		events = append(events, &event)
+	}
+	return events, nil
+}
+
+func (c *EventRepoImp) GetAllEventsNearestStartTime(ctx context.Context, limit int32) ([]*models.Event, error) {
+	rows, err := c.postgres.Query(ctx, "SELECT id, cafe_id, name, description, start_time, end_time, price, capacity, current_attendees, reservable FROM events ORDER BY start_time ASC LIMIT $1", limit)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get all events. error: %v", err)
 	}
 	defer rows.Close()
 

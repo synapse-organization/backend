@@ -607,26 +607,32 @@ func (c CafeHandler) DeleteMenuItem(ctx context.Context, itemID int32) error {
 	return err
 }
 
-func (c CafeHandler) Home(ctx context.Context) ([]models.Cafe, []*models.Comment, error) {
+func (c CafeHandler) Home(ctx context.Context) ([]models.Cafe, []*models.Comment, []*models.Event, error) {
 	cafes, err := c.Rating.GetNTopRatings(ctx, 5)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get home cafes. error: %v", err)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	cafes = append(cafes, 1)
 	ds, err := c.CafeRepo.GetByCafeIDs(ctx, cafes)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	comments, err := c.CommentRepo.GetLast(ctx, 0, 5, 0)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get home comments. error: %v", err)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	return ds, comments, nil
+	event, err := c.EventRepo.GetAllEventsNearestStartTime(ctx, 5)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get home events. error: %v", err)
+		return nil, nil, nil, err
+	}
+
+	return ds, comments, event, nil
 }
 
 func (c CafeHandler) ReserveEvent(ctx context.Context, eventID int32, userID int32) error {
@@ -755,18 +761,18 @@ func (c CafeHandler) ReserveEvent(ctx context.Context, eventID int32, userID int
 // }
 
 type RequestEditCafe struct {
-	ID            int32                    `json:"id"`
-	Name          string                   `json:"name"`
-	Description   string                   `json:"description"`
-	OpeningTime   int8                     `json:"opening_time"`
-	ClosingTime   int8                     `json:"closing_time"`
-	DeletedImages []string                 `json:"deleted_images"`
-	AddedImages   []string                 `json:"added_images"`
-	Capacity      int32                    `json:"capacity"`
-	ContactInfo   models.ContactInfo       `json:"contact_info"`
-	Categories    []models.CafeCategory    `json:"categories"`
-	Amenities     []models.AmenityCategory `json:"amenities"`
-	ReservationPrice float64 `json:"reservation_price"`
+	ID               int32                    `json:"id"`
+	Name             string                   `json:"name"`
+	Description      string                   `json:"description"`
+	OpeningTime      int8                     `json:"opening_time"`
+	ClosingTime      int8                     `json:"closing_time"`
+	DeletedImages    []string                 `json:"deleted_images"`
+	AddedImages      []string                 `json:"added_images"`
+	Capacity         int32                    `json:"capacity"`
+	ContactInfo      models.ContactInfo       `json:"contact_info"`
+	Categories       []models.CafeCategory    `json:"categories"`
+	Amenities        []models.AmenityCategory `json:"amenities"`
+	ReservationPrice float64                  `json:"reservation_price"`
 }
 
 func (c CafeHandler) EditCafe(ctx context.Context, newCafe RequestEditCafe) error {
@@ -1028,13 +1034,13 @@ func (c CafeHandler) DeleteEvent(ctx context.Context, eventID int32) error {
 }
 
 func (c CafeHandler) GetFullyBookedDays(ctx context.Context, cafeID int32, startDate time.Time) ([]time.Time, error) {
-    cafe, err := c.CafeRepo.GetByID(ctx, cafeID)
-    if err != nil {
-        log.GetLog().Errorf("Unable to get cafe. error: %v", err)
-        return nil, err
-    }
+	cafe, err := c.CafeRepo.GetByID(ctx, cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe. error: %v", err)
+		return nil, err
+	}
 
-    return c.ReservationRepo.GetFullyBookedDays(ctx, cafeID, startDate, cafe.OpeningTime, cafe.ClosingTime)
+	return c.ReservationRepo.GetFullyBookedDays(ctx, cafeID, startDate, cafe.OpeningTime, cafe.ClosingTime)
 }
 
 func (c CafeHandler) GetAvailableTimeSlots(ctx context.Context, cafeID int32, day time.Time) ([]map[string]interface{}, error) {
