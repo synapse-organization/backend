@@ -71,6 +71,13 @@ func (c CafeHandler) SearchCafe(ctx context.Context, name string, address string
 		}
 	}
 
+	for i, cafe := range cafes {
+		cafes[i].Location, err = c.LocationsRepo.GetCafeLocation(ctx, cafe.ID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get cafe rating. error: %v", err)
+		}
+	}
+
 	for i := range cafes {
 		images, err := c.ImageRepo.GetByReferenceID(ctx, cafes[i].ID)
 		if err != nil {
