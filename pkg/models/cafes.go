@@ -18,6 +18,7 @@ type Cafe struct {
 	Categories       []CafeCategory    `json:"categories"`
 	Amenities        []AmenityCategory `json:"amenities"`
 	ReservationPrice float64           `json:"reservation_price"`
+	Location         *Location         `json:"location"`
 }
 
 type ContactInfo struct {
@@ -28,4 +29,3 @@ type ContactInfo struct {
 	City     int    `json:"city"`
 	Address  string `json:"address"`
 }
-	
