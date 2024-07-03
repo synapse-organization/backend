@@ -64,6 +64,14 @@ func (c CafeHandler) SearchCafe(ctx context.Context, name string, address string
 		log.GetLog().Errorf("Unable to search cafe. error: %v", err)
 		return nil, err
 	}
+
+	for i, cafe := range cafes {
+		cafes[i].Location, err = c.LocationsRepo.GetCafeLocation(ctx, cafe.ID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get cafe rating. error: %v", err)
+		}
+	}
+
 	for i, cafe := range cafes {
 		cafes[i].Rating, err = c.Rating.GetCafesRating(ctx, cafe.ID)
 		if err != nil {
