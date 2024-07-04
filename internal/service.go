@@ -136,7 +136,7 @@ func Run() {
 		LocationsRepo:   locationRepo,
 		Redis:           rdb,
 	}
-	cafeHttpHandler := http.Cafe{Handler: &cafeHandler, Rating: ratingRepo, ImageRepo: imageRepo}
+	cafeHttpHandler := http.Cafe{Handler: &cafeHandler, Rating: ratingRepo, ImageRepo: imageRepo, FirstSearch: true}
 
 	newTicker := time.NewTicker(1 * time.Minute)
 	go func() {
