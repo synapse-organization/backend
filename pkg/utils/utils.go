@@ -6,7 +6,9 @@ import (
 	"barista/pkg/models"
 	"context"
 	"math/rand"
+	"net"
 	"net/mail"
+	"os"
 	"strings"
 	"time"
 
@@ -152,6 +154,29 @@ func CheckReservability(preReserve bool, newReserve bool, preCapacity int32, new
 			updateCapacity = true
 		}
 	}
-	
+
 	return updateCapacity, updateReserve, nil
+}
+
+func getBaseURL() (string, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "", err
+	}
+
+	addrs, err := net.LookupIP(hostname)
+	if err != nil {
+		return "", err
+	}
+
+	for _, addr := range addrs {
+		if ipv4 := addr.To4(); ipv4 != nil && !ipv4.IsLoopback() {
+			if ipv4.String() == "127.0.0.1" {
+				return "http://localhost:8080", nil
+			}
+			return "http://" + ipv4.String() + ":8080", nil
+		}
+	}
+
+	return "http://localhost:8080", nil
 }
