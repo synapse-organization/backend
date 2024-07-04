@@ -43,4 +43,5 @@ type User struct {
 	NationalID  string `json:"national_id"`
 	BankAccount string `json:"bank_account"`
 	Balance     int64  `json:"balance"`
+	IsVerified  bool   `json:"is_verified"`
 }

@@ -73,10 +73,10 @@ func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
 		emailBody := fmt.Sprintf(`Hello %s,<br><br>
 	To verify your email address, please click the link below:<br><br>
 	
-	<a href="http://localhost:8080/api/user/verify-email?c=%s&callback=http://localhost:5173">Verify Email</a><br><br>
+	<a href="http://%s:8080/api/user/verify-email?c=%s&callback=http://localhost:5173">Verify Email</a><br><br>
 
 	Yours,<br>
-	The Synapse team`, user.FirstName, encryptedEmail)
+	The Synapse team`, user.FirstName, utils.GetIP(), encryptedEmail)
 
 		err = utils.SendEmail(user.Email, "Barista account verification", emailBody)
 		if err != nil {
@@ -117,7 +117,11 @@ func (u UserHandler) Login(ctx context.Context, user *models.User) (map[string]s
 			log.GetLog().Errorf("Unable to create token. error: %v", err)
 			return nil, false, err
 		}
-		tokens[models.RoleToString(foundUser.Role)] = token
+		if foundUser.IsVerified {
+			tokens[models.RoleToString(foundUser.Role)] = token
+		} else {
+			tokens[models.RoleToString(foundUser.Role)] = "not_verified"
+		}
 		if foundUser.Role == models.ManagerRole && foundUser.NationalID != "" && foundUser.BankAccount != "" {
 			isCompleted = true
 		}
@@ -154,6 +158,9 @@ func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) erro
 	newPassword := utils.GenerateRandomStr(passwordLength)
 
 	for _, foundUser := range foundUsers {
+		if !foundUser.IsVerified {
+			continue
+		}
 		// Update user's password with the new random password
 		hashedPassword, err := utils.HashPassword(newPassword)
 		if err != nil {
