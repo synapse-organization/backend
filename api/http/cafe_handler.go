@@ -9,6 +9,7 @@ import (
 	"barista/pkg/utils"
 	"context"
 	"fmt"
+	"go.uber.org/atomic"
 	"net/http"
 	"strconv"
 	"time"
@@ -18,12 +19,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var firstSearch bool = true
-
 type Cafe struct {
-	Handler   *modules.CafeHandler
-	Rating    repo.RatingsRepo
-	ImageRepo repo.ImageRepo
+	Handler     *modules.CafeHandler
+	Rating      repo.RatingsRepo
+	ImageRepo   repo.ImageRepo
+	FirstSearch *atomic.Bool
 }
 
 func (h Cafe) Create(c *gin.Context) {
@@ -83,7 +83,7 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 		return
 	}
 
-	if firstSearch {
+	if h.FirstSearch.Load() {
 		fileIds := utils.TestUploadImage(cafes)
 		cafesLen := len(fileIds) - 40
 		for i := 0; i < cafesLen; i++ {
@@ -99,7 +99,7 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 
 		for i := 0; i < 30; i++ {
 			err = h.ImageRepo.Create(ctx, &models.Image{
-				ID:        fileIds[cafesLen + i],
+				ID:        fileIds[cafesLen+i],
 				Reference: int32(i + 61),
 			})
 			if err != nil {
@@ -110,7 +110,7 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 
 		for i := 0; i < 10; i++ {
 			err = h.ImageRepo.Create(ctx, &models.Image{
-				ID:        fileIds[cafesLen + 30 + i],
+				ID:        fileIds[cafesLen+30+i],
 				Reference: int32(i + 91),
 			})
 			if err != nil {
@@ -119,7 +119,7 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 			}
 		}
 
-		firstSearch = false
+		h.FirstSearch.Store(false)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"cafes": cafes})
