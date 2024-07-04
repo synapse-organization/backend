@@ -43,6 +43,25 @@ func NewMenuItemRepoImp(postgres *pgxpool.Pool) *MenuItemsRepoImp {
 	if err != nil {
 		log.GetLog().WithError(err).WithField("table", "menu_items").Fatal("Unable to create table")
 	}
+
+	_, err = postgres.Exec(context.Background(), `INSERT INTO menu_items (id, cafe_id, name, price, category, ingredients)
+		VALUES
+		(1, 1, 'Espresso', 3.0, 'coffee', 'Water, Coffee beans'),
+		(2, 1, 'Cappuccino', 4.0, 'coffee', 'Espresso, Milk, Milk foam'),
+		(3, 1, 'Latte', 4.5, 'coffee', 'Espresso, Steamed milk, Milk foam'),
+		(4, 1, 'Green Tea', 2.5, 'tea', 'Green tea leaves, Water'),
+		(5, 1, 'Chai Latte', 3.5, 'tea', 'Black tea, Spices, Milk, Water'),
+		(6, 1, 'Blueberry Muffin', 2.5, 'dessert', 'Flour, Sugar, Blueberries, Eggs, Butter, Baking powder'),
+		(7, 1, 'Chocolate Cake', 3.0, 'dessert', 'Flour, Sugar, Cocoa powder, Eggs, Butter, Baking powder'),
+		(8, 1, 'Caesar Salad', 5.0, 'appetizer', 'Romaine lettuce, Croutons, Parmesan cheese, Caesar dressing'),
+		(9, 1, 'Grilled Cheese Sandwich', 4.0, 'main_dish', 'Bread, Cheese, Butter'),
+		(10, 1, 'Iced Coffee', 3.5, 'drink', 'Coffee, Ice, Milk, Sugar')
+		ON CONFLICT DO NOTHING;
+	`)
+	if err != nil {
+		log.GetLog().Errorf("Unable to insert menu items. error: %v", err)
+	}
+
 	return &MenuItemsRepoImp{postgres: postgres}
 }
 
