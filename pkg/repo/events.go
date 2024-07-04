@@ -57,11 +57,11 @@ func NewEventRepoImp(postgres *pgxpool.Pool) *EventRepoImp {
 
 	_, err = postgres.Exec(context.Background(), `INSERT INTO events (id, cafe_id, name, description, start_time, end_time, price, capacity, current_attendees, reservable)
 			VALUES
-			(61, 1, 'Live Jazz Night', 'Enjoy an evening of live jazz music.', '2024-07-10 19:00:00', '2024-07-10 21:00:00', 20.0, 50, 30, true),
-			(62, 1, 'Art Exhibition', 'Showcasing local artists.', '2024-07-11 10:00:00', '2024-07-11 17:00:00', 10.0, 100, 60, true),
-			(63, 1, 'Coffee Tasting', 'Sample different coffee blends.', '2024-07-12 14:00:00', '2024-07-12 16:00:00', 15.0, 30, 25, true),
-			(64, 4, 'Vegan Cooking Workshop', 'Learn to cook vegan dishes.', '2024-07-13 11:00:00', '2024-07-13 14:00:00', 25.0, 20, 18, true),
-			(65, 5, 'Kids Storytelling', 'Fun storytelling session for kids.', '2024-07-14 10:00:00', '2024-07-14 11:00:00', 5.0, 40, 35, true),
+			(61, 1, 'Live Jazz Night', 'Enjoy an evening of live jazz music.', '2024-07-10 19:00:00', '2024-07-10 21:00:00', 20000.0, 50, 30, true),
+			(62, 1, 'Art Exhibition', 'Showcasing local artists.', '2024-07-11 10:00:00', '2024-07-11 17:00:00', 100000.0, 100, 60, true),
+			(63, 1, 'Coffee Tasting', 'Sample different coffee blends.', '2024-07-12 14:00:00', '2024-07-12 16:00:00', 15000.0, 30, 25, true),
+			(64, 4, 'Vegan Cooking Workshop', 'Learn to cook vegan dishes.', '2024-07-13 11:00:00', '2024-07-13 14:00:00', 25000.0, 20, 18, true),
+			(65, 5, 'Kids Storytelling', 'Fun storytelling session for kids.', '2024-07-14 10:00:00', '2024-07-14 11:00:00', 5000.0, 40, 35, true),
 			(66, 6, 'International Cuisine Night', 'Experience dishes from around the world.', '2024-07-15 18:00:00', '2024-07-15 21:00:00', 30.0, 60, 50, true),
 			(67, 7, 'Poetry Reading', 'Enjoy an evening of poetry readings.', '2024-07-16 19:00:00', '2024-07-16 20:30:00', 10.0, 40, 35, true),
 			(68, 8, 'Herbal Tea Workshop', 'Learn about and taste herbal teas.', '2024-07-17 15:00:00', '2024-07-17 17:00:00', 12.0, 30, 25, true),

@@ -27,6 +27,15 @@ func NewLocationsRepoImp(postgres *pgxpool.Pool) *LocationsRepoImp {
 	if err != nil {
 		log.GetLog().WithError(err).WithField("table", "locations").Fatal("Unable to create table")
 	}
+
+	_, err = postgres.Exec(context.Background(), `INSERT INTO locations (id, latitude, longitude)
+			VALUES
+			(110, 35.7019233, 51.4054430);
+	`)
+
+	if err != nil {
+		log.GetLog().Errorf("Unable to insert locations. error: %v", err)
+	}
 	return &LocationsRepoImp{postgres: postgres}
 }
 

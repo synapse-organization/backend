@@ -46,10 +46,10 @@ func NewMenuItemRepoImp(postgres *pgxpool.Pool) *MenuItemsRepoImp {
 
 	_, err = postgres.Exec(context.Background(), `INSERT INTO menu_items (id, cafe_id, name, price, category, ingredients)
 		VALUES
-		(91, 1, 'Espresso', 3.0, 'coffee', 'Water, Coffee beans'),
-		(92, 1, 'Cappuccino', 4.0, 'coffee', 'Espresso, Milk, Milk foam'),
-		(93, 1, 'Latte', 4.5, 'coffee', 'Espresso, Steamed milk, Milk foam'),
-		(94, 1, 'Green Tea', 2.5, 'tea', 'Green tea leaves, Water'),
+		(91, 1, 'Espresso', 30000.0, 'coffee', 'Water, Coffee beans'),
+		(92, 1, 'Cappuccino', 40000.0, 'coffee', 'Espresso, Milk, Milk foam'),
+		(93, 1, 'Latte', 40000.0, 'coffee', 'Espresso, Steamed milk, Milk foam'),
+		(94, 1, 'Green Tea', 25000.0, 'tea', 'Green tea leaves, Water'),
 		(95, 1, 'Chai Latte', 3.5, 'tea', 'Black tea, Spices, Milk, Water'),
 		(96, 1, 'Blueberry Muffin', 2.5, 'dessert', 'Flour, Sugar, Blueberries, Eggs, Butter, Baking powder'),
 		(97, 1, 'Chocolate Cake', 3.0, 'dessert', 'Flour, Sugar, Cocoa powder, Eggs, Butter, Baking powder'),
