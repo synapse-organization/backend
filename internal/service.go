@@ -12,6 +12,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cast"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	atomic2 "go.uber.org/atomic"
 	"os"
 	"time"
 )
@@ -136,7 +137,7 @@ func Run() {
 		LocationsRepo:   locationRepo,
 		Redis:           rdb,
 	}
-	cafeHttpHandler := http.Cafe{Handler: &cafeHandler, Rating: ratingRepo, ImageRepo: imageRepo, FirstSearch: true}
+	cafeHttpHandler := http.Cafe{Handler: &cafeHandler, Rating: ratingRepo, ImageRepo: imageRepo, FirstSearch: atomic2.NewBool(true)}
 
 	newTicker := time.NewTicker(1 * time.Minute)
 	go func() {

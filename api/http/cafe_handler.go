@@ -9,6 +9,7 @@ import (
 	"barista/pkg/utils"
 	"context"
 	"fmt"
+	"go.uber.org/atomic"
 	"net/http"
 	"strconv"
 	"time"
@@ -22,7 +23,7 @@ type Cafe struct {
 	Handler     *modules.CafeHandler
 	Rating      repo.RatingsRepo
 	ImageRepo   repo.ImageRepo
-	FirstSearch bool
+	FirstSearch *atomic.Bool
 }
 
 func (h Cafe) Create(c *gin.Context) {
@@ -82,7 +83,7 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 		return
 	}
 
-	if h.FirstSearch {
+	if h.FirstSearch.Load() {
 		fileIds := utils.TestUploadImage(cafes)
 		cafesLen := len(fileIds) - 40
 		for i := 0; i < cafesLen; i++ {
@@ -118,7 +119,7 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 			}
 		}
 
-		h.FirstSearch = false
+		h.FirstSearch.Store(false)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"cafes": cafes})
