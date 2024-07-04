@@ -131,7 +131,7 @@ func (u *UserRepoImp) GetByID(ctx context.Context, id int32) (*models.User, erro
 
 func (u *UserRepoImp) GetByEmail(ctx context.Context, email string) ([]*models.User, error) {
 	var users []*models.User
-	rows, err := u.postgres.Query(ctx, "SELECT id, first_name, last_name, email, password, phone, sex, user_role, balance, extra_info->>'bank_account', extra_info->>'national_id' FROM users WHERE email = $1", email)
+	rows, err := u.postgres.Query(ctx, "SELECT id, first_name, last_name, email, password, phone, sex, user_role, balance, is_verified, extra_info->>'bank_account', extra_info->>'national_id' FROM users WHERE email = $1", email)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get user by email. error: %v", err)
 		return nil, err
@@ -139,7 +139,7 @@ func (u *UserRepoImp) GetByEmail(ctx context.Context, email string) ([]*models.U
 	defer rows.Close()
 	for rows.Next() {
 		var user models.User
-		err = rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex, &user.Role, &user.Balance, &user.BankAccount, &user.NationalID)
+		err = rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex, &user.Role, &user.Balance, &user.IsVerified, &user.BankAccount, &user.NationalID)
 		if err != nil {
 			log.GetLog().Errorf("Unable to scan user. error: %v", err)
 			return nil, err

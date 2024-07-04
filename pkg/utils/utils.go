@@ -154,7 +154,7 @@ func CheckReservability(preReserve bool, newReserve bool, preCapacity int32, new
 			updateCapacity = true
 		}
 	}
-
+	
 	return updateCapacity, updateReserve, nil
 }
 
@@ -179,4 +179,22 @@ func getBaseURL() (string, error) {
 	}
 
 	return "http://localhost:8080", nil
+}
+
+func GetIP() string {
+	// Get the IP addresses associated with the host running the application
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		panic(err)
+	}
+
+	// Iterate over the addresses and find the IP address
+	for _, addr := range addrs {
+		ipNet, ok := addr.(*net.IPNet)
+		if ok && !ipNet.IP.IsLoopback() && ipNet.IP.To4() != nil {
+			ipAddress := ipNet.IP.String()
+			return ipAddress
+		}
+	}
+	return ""
 }
