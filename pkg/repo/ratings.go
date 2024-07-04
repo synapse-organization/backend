@@ -40,16 +40,16 @@ func NewRatingsRepoImp(postgres *pgxpool.Pool) *RatingsRepoImp {
 
 	_, err = postgres.Exec(context.Background(), `INSERT INTO ratings (id, cafe_id, user_id, rating)
 		VALUES
-		(1, 1, 12, 5),
-		(2, 1, 13, 4),
-		(3, 1, 14, 3),
-		(4, 2, 15, 3),
-		(5, 3, 16, 4),
-		(6, 3, 17, 5),
-		(7, 4, 18, 4),
-		(8, 4, 19, 3),
-		(9, 5, 20, 5),
-		(10, 5, 21, 4)
+		(1, 1, 32, 5),
+		(2, 1, 33, 4),
+		(3, 1, 34, 3),
+		(4, 2, 35, 3),
+		(5, 3, 36, 4),
+		(6, 3, 37, 5),
+		(7, 4, 38, 4),
+		(8, 4, 39, 3),
+		(9, 5, 40, 5),
+		(10, 5, 41, 4)
 		ON CONFLICT DO NOTHING;
 	`)
 
