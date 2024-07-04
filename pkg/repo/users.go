@@ -53,7 +53,44 @@ func NewUserRepoImp(postgres *pgxpool.Pool) *UserRepoImp {
 		log.GetLog().WithError(err).WithField("table", "users").Fatal("Unable to create table")
 	}
 
-	_, err = postgres.Exec(context.Background(), `INSERT INTO users (id) VALUES (12) ON CONFLICT DO NOTHING`)
+	_, err = postgres.Exec(context.Background(), `INSERT INTO users (id, first_name, last_name, email, password, phone, sex, is_verified, user_role, balance, extra_info)
+			VALUES
+			(12, 'Alice', 'Smith', 'alice.smith@gmail.com', '$2a$10$examplehash1', 12345678901, 2, true, 2, 1000, '{}'),
+			(13, 'Bob', 'Johnson', 'bob.johnson@gmail.com', '$2a$10$examplehash2', 23456789012, 1, true, 2, 1000, '{}'),
+			(14, 'Carol', 'Williams', 'carol.williams@gmail.com', '$2a$10$examplehash3', 34567890123, 2, true, 2, 1000, '{}'),
+			(15, 'David', 'Brown', 'david.brown@gmail.com', '$2a$10$examplehash4', 45678901234, 1, true, 2, 1000, '{}'),
+			(16, 'Eve', 'Jones', 'eve.jones@gmail.com', '$2a$10$examplehash5', 56789012345, 2, true, 2, 1000, '{}'),
+			(17, 'Frank', 'Garcia', 'frank.garcia@gmail.com', '$2a$10$examplehash6', 67890123456, 1, true, 2, 1000, '{}'),
+			(18, 'Grace', 'Martinez', 'grace.martinez@gmail.com', '$2a$10$examplehash7', 78901234567, 2, true, 2, 1000, '{}'),
+			(19, 'Hank', 'Davis', 'hank.davis@gmail.com', '$2a$10$examplehash8', 89012345678, 1, true, 2, 1000, '{}'),
+			(20, 'Ivy', 'Rodriguez', 'ivy.rodriguez@gmail.com', '$2a$10$examplehash9', 90123456789, 2, true, 2, 1000, '{}'),
+			(21, 'Jack', 'Martinez', 'jack.martinez@gmail.com', '$2a$10$examplehash10', 12309845678, 1, true, 2, 1000, '{}'),
+			(22, 'Karen', 'Hernandez', 'karen.hernandez@gmail.com', '$2a$10$examplehash11', 23410956789, 2, true, 2, 1000, '{}'),
+			(23, 'Leo', 'Lopez', 'leo.lopez@gmail.com', '$2a$10$examplehash12', 34521067890, 1, true, 2, 1000, '{}'),
+			(24, 'Mia', 'Gonzalez', 'mia.gonzalez@gmail.com', '$2a$10$examplehash13', 45632178901, 2, true, 2, 1000, '{}'),
+			(25, 'Nate', 'Wilson', 'nate.wilson@gmail.com', '$2a$10$examplehash14', 56743289012, 1, true, 2, 1000, '{}'),
+			(26, 'Olivia', 'Anderson', 'olivia.anderson@gmail.com', '$2a$10$examplehash15', 67854390123, 2, true, 2, 1000, '{}'),
+			(27, 'Paul', 'Thomas', 'paul.thomas@gmail.com', '$2a$10$examplehash16', 78965401234, 1, true, 2, 1000, '{}'),
+			(28, 'Quincy', 'Taylor', 'quincy.taylor@gmail.com', '$2a$10$examplehash17', 89076512345, 2, true, 2, 1000, '{}'),
+			(29, 'Rose', 'Moore', 'rose.moore@gmail.com', '$2a$10$examplehash18', 90187623456, 1, true, 2, 1000, '{}'),
+			(30, 'Sam', 'Jackson', 'sam.jackson@gmail.com', '$2a$10$examplehash19', 12398734567, 2, true, 2, 1000, '{}'),
+			(31, 'Tina', 'Martin', 'tina.martin@gmail.com', '$2a$10$examplehash20', 23409845678, 1, true, 2, 1000, '{}'),
+			(32, 'Uma', 'Lee', 'uma.lee@gmail.com', '$2a$10$examplehash21', 34510956789, 2, true, 2, 1000, '{}'),
+			(33, 'Vince', 'Perez', 'vince.perez@gmail.com', '$2a$10$examplehash22', 45621067890, 1, true, 2, 1000, '{}'),
+			(34, 'Wendy', 'Clark', 'wendy.clark@gmail.com', '$2a$10$examplehash23', 56732178901, 2, true, 2, 1000, '{}'),
+			(35, 'Xander', 'Lewis', 'xander.lewis@gmail.com', '$2a$10$examplehash24', 67843289012, 1, true, 2, 1000, '{}'),
+			(36, 'Yara', 'Walker', 'yara.walker@gmail.com', '$2a$10$examplehash25', 78954390123, 2, true, 2, 1000, '{}'),
+			(37, 'Zane', 'Hall', 'zane.hall@gmail.com', '$2a$10$examplehash26', 89065401234, 1, true, 2, 1000, '{}'),
+			(38, 'Amy', 'King', 'amy.king@gmail.com', '$2a$10$examplehash27', 90176512345, 2, true, 2, 1000, '{}'),
+			(39, 'Ben', 'Scott', 'ben.scott@gmail.com', '$2a$10$examplehash28', 12387623456, 1, true, 2, 1000, '{}'),
+			(40, 'Chloe', 'Green', 'chloe.green@gmail.com', '$2a$10$examplehash29', 23498734567, 2, true, 2, 1000, '{}'),
+			(41, 'Dan', 'Adams', 'dan.adams@gmail.com', '$2a$10$examplehash30', 34509845678, 1, true, 2, 1000, '{}')
+			ON CONFLICT DO NOTHING;
+	`)
+	if err != nil {
+		log.GetLog().Errorf("Unable to insert users. error: %v", err)
+	}
+
 	return &UserRepoImp{postgres: postgres}
 }
 

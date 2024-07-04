@@ -37,6 +37,26 @@ func NewRatingsRepoImp(postgres *pgxpool.Pool) *RatingsRepoImp {
 	if err != nil {
 		log.GetLog().WithError(err).WithField("table", "ratings").Fatal("Unable to create table")
 	}
+
+	_, err = postgres.Exec(context.Background(), `INSERT INTO ratings (id, cafe_id, user_id, rating)
+		VALUES
+		(1, 1, 12, 5),
+		(2, 1, 13, 4),
+		(3, 1, 14, 3),
+		(4, 2, 15, 3),
+		(5, 3, 16, 4),
+		(6, 3, 17, 5),
+		(7, 4, 18, 4),
+		(8, 4, 19, 3),
+		(9, 5, 20, 5),
+		(10, 5, 21, 4)
+		ON CONFLICT DO NOTHING;
+	`)
+
+	if err != nil {
+		log.GetLog().Errorf("Unable to insert ratings. error: %v", err)
+	}
+	
 	return &RatingsRepoImp{postgres: postgres}
 }
 
