@@ -396,24 +396,24 @@ func (c CafeHandler) GetComments(ctx context.Context, cafeID int32, counter int)
 	return commentsWithNames, err
 }
 
-func (c CafeHandler) CreateEvent(ctx context.Context, event models.Event) error {
+func (c CafeHandler) CreateEvent(ctx context.Context, event models.Event)  (int32, error) {
 	start_time := event.StartTime.UTC()
 	end_time := event.EndTime.UTC()
 
 	if !utils.CheckStartTime(start_time) {
-		return errors.ErrStartTimeInvalid.Error()
+		return 0, errors.ErrStartTimeInvalid.Error()
 	}
 
 	if !utils.CheckEndTime(start_time, end_time) {
-		return errors.ErrEndTimeInvalid.Error()
+		return 0, errors.ErrEndTimeInvalid.Error()
 	}
 
 	if !utils.CheckPriceValidity(event.Price) {
-		return errors.ErrPriceInvalid.Error()
+		return 0, errors.ErrPriceInvalid.Error()
 	}
 
 	if !utils.CheckCapacityValidity(event.Capacity) {
-		return errors.ErrCapacityInvalid.Error()
+		return 0, errors.ErrCapacityInvalid.Error()
 	}
 
 	eventID := rand.Int31()
@@ -439,17 +439,17 @@ func (c CafeHandler) CreateEvent(ctx context.Context, event models.Event) error 
 
 		if err != nil {
 			log.GetLog().Errorf("Unable to create image. error: %v", err)
-			return err
+			return 0, err
 		}
 	}
 
 	err := c.EventRepo.CreateEventForCafe(ctx, newEvent)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create event for cafe. error: %v", err)
-		return err
+		return 0, err
 	}
 
-	return err
+	return eventID, err
 }
 
 func (c CafeHandler) AddMenuItem(ctx context.Context, menuItem *models.MenuItem) (*models.MenuItem, error) {
