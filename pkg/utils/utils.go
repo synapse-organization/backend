@@ -154,7 +154,7 @@ func CheckReservability(preReserve bool, newReserve bool, preCapacity int32, new
 			updateCapacity = true
 		}
 	}
-	
+
 	return updateCapacity, updateReserve, nil
 }
 
@@ -182,6 +182,7 @@ func getBaseURL() (string, error) {
 }
 
 func GetIP() string {
+	return "82.115.24.199"
 	// Get the IP addresses associated with the host running the application
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
