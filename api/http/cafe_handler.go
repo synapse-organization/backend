@@ -249,14 +249,14 @@ func (h Cafe) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	err = h.Handler.CreateEvent(ctx, req)
+	eventID, err := h.Handler.CreateEvent(ctx, req)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create event. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	c.JSON(http.StatusOK, gin.H{"event_id": eventID})
 	return
 }
 

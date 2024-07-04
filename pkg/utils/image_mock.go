@@ -29,7 +29,9 @@ func TestUploadImage(cafes []models.Cafe) []string {
 	var fileIDs []string
 	cafesLen := len(cafes)
 
-	for i := 0; i < cafesLen + 40; i++ {
+	myIP, _ := getBaseURL()
+
+	for i := 0; i < cafesLen+40; i++ {
 		body := &bb.Buffer{}
 		writer := multipart.NewWriter(body)
 		part, err := writer.CreateFormFile("image", filepath.Base(filePath))
@@ -50,7 +52,7 @@ func TestUploadImage(cafes []models.Cafe) []string {
 			continue
 		}
 
-		req, err := http.NewRequest("POST", "http://localhost:8080/api/image/upload", body)
+		req, err := http.NewRequest("POST", myIP+"/api/image/upload", body)
 		if err != nil {
 			log.GetLog().Errorf("Unable to create request: %v", err)
 			continue
