@@ -6,6 +6,7 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"barista/pkg/repo"
+	"barista/pkg/utils"
 	"context"
 	"fmt"
 	"net/http"
@@ -16,6 +17,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+var firstSearch bool = true
 
 type Cafe struct {
 	Handler   *modules.CafeHandler
@@ -78,6 +81,45 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 		log.GetLog().Errorf("Unable to search cafe. error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error().Error()})
 		return
+	}
+
+	if firstSearch {
+		fileIds := utils.TestUploadImage(cafes)
+		cafesLen := len(fileIds) - 40
+		for i := 0; i < cafesLen; i++ {
+			err = h.ImageRepo.Create(ctx, &models.Image{
+				ID:        fileIds[i],
+				Reference: cafes[i].ID,
+			})
+			if err != nil {
+				log.GetLog().Errorf("Unable to create image")
+				return
+			}
+		}
+
+		for i := 0; i < 30; i++ {
+			err = h.ImageRepo.Create(ctx, &models.Image{
+				ID:        fileIds[cafesLen + i],
+				Reference: int32(i + 61),
+			})
+			if err != nil {
+				log.GetLog().Errorf("Unable to create image")
+				return
+			}
+		}
+
+		for i := 0; i < 10; i++ {
+			err = h.ImageRepo.Create(ctx, &models.Image{
+				ID:        fileIds[cafesLen + 30 + i],
+				Reference: int32(i + 91),
+			})
+			if err != nil {
+				log.GetLog().Errorf("Unable to create image")
+				return
+			}
+		}
+
+		firstSearch = false
 	}
 
 	c.JSON(http.StatusOK, gin.H{"cafes": cafes})
