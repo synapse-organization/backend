@@ -9,17 +9,20 @@ import (
 	"context"
 	go_error "errors"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UserHandler struct {
-	UserRepo  repo.UsersRepo
-	TokenRepo repo.TokensRepo
-	Postgres  *pgxpool.Pool
+	UserRepo        repo.UsersRepo
+	TokenRepo       repo.TokensRepo
+	ReservationRepo repo.ReservationRepo
+	CafeRepo        repo.CafesRepo
+	Postgres        *pgxpool.Pool
 }
 
 const (
@@ -38,7 +41,7 @@ func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
 	}
 
 	if !utils.CheckPasswordValidity(user.Password) {
-		return errors.ErrPasswordInvalid.Error()
+		return errors.ErrPasswordIncorrect.Error()
 	}
 
 	if !utils.CheckNameValidity(user.FirstName) {
@@ -70,10 +73,10 @@ func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
 		emailBody := fmt.Sprintf(`Hello %s,<br><br>
 	To verify your email address, please click the link below:<br><br>
 	
-	<a href="http://localhost:8080/api/user/verify-email?c=%s&callback=http://localhost:5173">Verify Email</a><br><br>
+	<a href="http://%s:8080/api/user/verify-email?c=%s&callback=http://localhost:5173/login">Verify Email</a><br><br>
 
 	Yours,<br>
-	The Synapse team`, user.FirstName, encryptedEmail)
+	The Synapse team`, user.FirstName, utils.GetIP(), encryptedEmail)
 
 		err = utils.SendEmail(user.Email, "Barista account verification", emailBody)
 		if err != nil {
@@ -84,30 +87,47 @@ func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
 	return nil
 }
 
-func (u UserHandler) Login(ctx context.Context, user *models.User) (string, error) {
-	foundUser, err := u.UserRepo.GetByEmail(ctx, user.Email)
+func (u UserHandler) Login(ctx context.Context, user *models.User) (map[string]string, bool, error) {
+	foundUsers, err := u.UserRepo.GetByEmail(ctx, user.Email)
 	if err != nil {
 		log.GetLog().Errorf("Incorrect name or password. error: %v", err)
-		return "", err
+		return nil, false, err
+	}
+	var correctUsers []*models.User
+	for _, foundUser := range foundUsers {
+		if utils.CheckPasswordHash(user.Password, foundUser.Password) {
+			correctUsers = append(correctUsers, foundUser)
+		}
+	}
+	if len(correctUsers) == 0 {
+		return nil, false, errors.ErrPasswordIncorrect.Error()
 	}
 
-	if !utils.CheckPasswordHash(user.Password, foundUser.Password) {
-		return "", errors.ErrPasswordIncorrect.Error()
+	var isCompleted bool
+	tokens := map[string]string{}
+	for _, foundUser := range correctUsers {
+		claims, token, err := utils.TokenGenerator(foundUser.ID, foundUser.Email, foundUser.FirstName, foundUser.LastName, int32(foundUser.Role))
+		if err != nil {
+			log.GetLog().Errorf("Unable to generate tokens. error: %v", err)
+		}
+
+		expiresAt := time.Unix(claims.ExpiresAt, 0)
+		err = u.TokenRepo.Create(ctx, claims.TokenID, token, foundUser.ID, expiresAt)
+		if err != nil {
+			log.GetLog().Errorf("Unable to create token. error: %v", err)
+			return nil, false, err
+		}
+		if foundUser.IsVerified {
+			tokens[models.RoleToString(foundUser.Role)] = token
+		} else {
+			tokens[models.RoleToString(foundUser.Role)] = "not_verified"
+		}
+		if foundUser.Role == models.ManagerRole && foundUser.NationalID != "" && foundUser.BankAccount != "" {
+			isCompleted = true
+		}
 	}
 
-	claims, token, err := utils.TokenGenerator(foundUser.ID, foundUser.Email, foundUser.FirstName, foundUser.LastName, int32(foundUser.Role))
-	if err != nil {
-		log.GetLog().Errorf("Unable to generate tokens. error: %v", err)
-	}
-
-	expiresAt := time.Unix(claims.ExpiresAt, 0)
-	err = u.TokenRepo.Create(ctx, claims.TokenID, token, foundUser.ID, expiresAt)
-	if err != nil {
-		log.GetLog().Errorf("Unable to create token. error: %v", err)
-		return "", err
-	}
-
-	return token, nil
+	return tokens, isCompleted, nil
 }
 
 func (u UserHandler) VerifyEmail(ctx context.Context, email string) error {
@@ -128,31 +148,35 @@ func (u UserHandler) VerifyEmail(ctx context.Context, email string) error {
 
 func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) error {
 	// Find the user based on email
-	foundUser, err := u.UserRepo.GetByEmail(ctx, user.Email)
+	foundUsers, err := u.UserRepo.GetByEmail(ctx, user.Email)
 	if err != nil {
 		log.GetLog().Errorf("Email does not exist. error: %v", err)
 		return err
 	}
 
 	// Generate a random password
-	newPassword := utils.GenerateRandomPassword(passwordLength)
+	newPassword := utils.GenerateRandomStr(passwordLength)
 
-	// Update user's password with the new random password
-	hashedPassword, err := utils.HashPassword(newPassword)
-	if err != nil {
-		log.GetLog().Errorf("Unable to hash password. error: %v", err)
-		return err
-	}
-	foundUser.Password = hashedPassword
+	for _, foundUser := range foundUsers {
+		if !foundUser.IsVerified {
+			continue
+		}
+		// Update user's password with the new random password
+		hashedPassword, err := utils.HashPassword(newPassword)
+		if err != nil {
+			log.GetLog().Errorf("Unable to hash password. error: %v", err)
+			return err
+		}
+		foundUser.Password = hashedPassword
 
-	// Save the updated password to the database
-	if err := u.UserRepo.UpdatePassword(ctx, foundUser.ID, foundUser.Password); err != nil {
-		log.GetLog().Errorf("Unable to update user's password. error: %v", err)
-		return err
-	}
+		// Save the updated password to the database
+		if err := u.UserRepo.UpdatePassword(ctx, foundUser.ID, foundUser.Password); err != nil {
+			log.GetLog().Errorf("Unable to update user's password. error: %v", err)
+			return err
+		}
 
-	// Send email with the new password to the user
-	emailBody := fmt.Sprintf(`Hello %s,<br><br>
+		// Send email with the new password to the user
+		emailBody := fmt.Sprintf(`Hello %s,<br><br>
 	A new password has been requested for your Barista account associated with %s.<br><br>
 
 	Here is your new password: <strong>%s</strong><br><br>
@@ -163,10 +187,11 @@ func (u UserHandler) ForgetPassword(ctx context.Context, user *models.User) erro
 
 	Yours,<br>
 	The Synapse team`, foundUser.FirstName, foundUser.Email, newPassword)
-	err = utils.SendEmail(foundUser.Email, "Barista account recovery", emailBody)
-	if err != nil {
-		log.GetLog().Errorf("Unable to send email. error: %v", err)
-		return err
+		err = utils.SendEmail(foundUser.Email, "Barista account recovery", emailBody)
+		if err != nil {
+			log.GetLog().Errorf("Unable to send email. error: %v", err)
+			return err
+		}
 	}
 
 	return nil
@@ -244,10 +269,32 @@ func (u UserHandler) EditProfile(ctx context.Context, newDetail *models.User, us
 		}
 	}
 
+	if newDetail.BankAccount != "" && newDetail.NationalID != "" {
+		err = u.UserRepo.UpdateExtraInfo(ctx, int32(user_id), map[string]interface{}{
+			"national_id":  newDetail.NationalID,
+			"bank_account": newDetail.BankAccount,
+		})
+		if err != nil {
+			log.GetLog().Errorf("Unable to update user's extra info. error: %v", err)
+			return err
+		}
+	}
+
 	return err
 }
 
-func (u UserHandler) ChangePassword(ctx context.Context, userID int32, password string) error {
+func (u UserHandler) ChangePassword(ctx context.Context, userID int32, password, currentPassword string) error {
+
+	foundUser, err := u.UserRepo.GetByID(ctx, userID)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to get user by id")
+		return err
+	}
+
+	if !utils.CheckPasswordHash(currentPassword, foundUser.Password) {
+		return errors.ErrPasswordIncorrect.Error()
+	}
+
 	hashedPassword, err := utils.HashPassword(password)
 	if err != nil {
 		log.GetLog().Errorf("Unable to hash password. error: %v", err)
@@ -290,4 +337,42 @@ func (u UserHandler) ManagerAgreement(ctx context.Context, userID int32, nationa
 	}
 	return nil
 
+}
+
+type UserReservation struct {
+	CafeID           int32     `json:"cafe_id"`
+	CafeName         string    `json:"cafe_name"`
+	StartTime        time.Time `json:"start_time"`
+	EndTime          time.Time `json:"end_time"`
+	People           int32     `json:"people"`
+	ReservationPrice float64   `json:"reservation_price"`
+}
+
+func (u UserHandler) UserReservations(ctx context.Context, userID int32, day time.Time) ([]UserReservation, error) {
+	reservations, err := u.ReservationRepo.GetByDateUserID(ctx, userID, day, day.Add(time.Hour*24))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get user's reservations. error: %v", err)
+		return nil, err
+	}
+
+	userReservations := []UserReservation{}
+
+	for _, reservation := range *reservations {
+		cafe, err := u.CafeRepo.GetByID(ctx, reservation.CafeID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get cafe by id. error: %v", err)
+			return nil, err
+		}
+
+		userReservations = append(userReservations, UserReservation{
+			CafeID:           reservation.CafeID,
+			CafeName:         cafe.Name,
+			StartTime:        reservation.StartTime,
+			EndTime:          reservation.EndTime,
+			People:           reservation.People,
+			ReservationPrice: cafe.ReservationPrice,
+		})
+	}
+
+	return userReservations, nil
 }

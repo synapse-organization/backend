@@ -3,17 +3,27 @@ package errors
 import "errors"
 
 var (
-	ErrPasswordInvalid   = StringError{Msg: "password is invalid"}
-	ErrorUserNotFound    = StringError{Msg: "user not found"}
-	ErrEmailInvalid      = StringError{Msg: "email is invalid"}
-	ErrPhoneInvalid      = StringError{Msg: "phone is invalid"}
-	ErrFirstNameInvalid  = StringError{Msg: "first_name is invalid"}
-	ErrLastNameInvalid   = StringError{Msg: "last_name is invalid"}
-	ErrPasswordIncorrect = StringError{Msg: "password is incorrect"}
-	ErrEmailExists       = StringError{Msg: "email already exists"}
-	ErrStartTimeInvalid  = StringError{Msg: "start time is invalid"}
-	ErrEndTimeInvalid    = StringError{Msg: "end time is invalid"}
-	ErrImageInvalid		= StringError{Msg: "image doesn't exist"}
+	ErrorUserNotFound    = StringError{Msg: "کاربر یافت نشد"}
+	ErrEmailInvalid      = StringError{Msg: "ایمیل نامعتبر است"}
+	ErrPhoneInvalid      = StringError{Msg: "شماره تلفن نامعتبر است"}
+	ErrFirstNameInvalid  = StringError{Msg: "نام نامعتبر است"}
+	ErrLastNameInvalid   = StringError{Msg: "نام خانوادگی نامعتبر است"}
+	ErrPasswordIncorrect = StringError{Msg: "رمز عبور اشتباه است"}
+	ErrPasswordNotMatch  = StringError{Msg: "رمز عبور ها مطابقت ندارند"}
+	ErrEmailExists       = StringError{Msg: "این ایمیل وجود دارد"}
+	ErrStartTimeInvalid  = StringError{Msg: "زمان شروع نامعتبر است"}
+	ErrEndTimeInvalid    = StringError{Msg: "زمان پایان نامعتبر است"}
+	ErrImageInvalid      = StringError{Msg: "تصویر نامعتبر است"}
+	ErrForbidden         = StringError{Msg: "دسترسی غیر مجاز"}
+	ErrUnableToGetUser   = StringError{Msg: "خطایی در گرفتن اطلاعات کاربر رخ داده است"}
+	ErrBadRequest        = StringError{Msg: "درخواست نامعتبر است"}
+	ErrDidntLogin        = StringError{Msg: "شما وارد نشده اید"}
+	ErrInternalError     = StringError{Msg: "خطای داخلی"}
+	ErrNotEnoughBalance  = StringError{Msg: "موجودی کافی نیست"}
+	ErrCapacityInvalid   = StringError{Msg: "ظرفیت وارد شده نامعتبر است"}
+	ErrPriceInvalid      = StringError{Msg: "مبلغ وارد شده نامعتبر است"}
+	ErrEventReserved     = StringError{Msg: "شما قبلا این رویداد را رزرو کرده اید"}
+	ErrEventUnreservable = StringError{Msg: "رویداد قابل رزرو نیست"}
 )
 
 type StringError struct {

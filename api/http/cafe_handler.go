@@ -2,19 +2,28 @@ package http
 
 import (
 	"barista/internal/modules"
+	"barista/pkg/errors"
 	"barista/pkg/log"
 	"barista/pkg/models"
+	"barista/pkg/repo"
 	"context"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
+	"go.uber.org/atomic"
+
+	"github.com/spf13/cast"
+
 	"github.com/gin-gonic/gin"
 )
 
 type Cafe struct {
-	Handler *modules.CafeHandler
+	Handler     *modules.CafeHandler
+	Rating      repo.RatingsRepo
+	ImageRepo   repo.ImageRepo
+	FirstSearch *atomic.Bool
 }
 
 func (h Cafe) Create(c *gin.Context) {
@@ -25,22 +34,27 @@ func (h Cafe) Create(c *gin.Context) {
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		c.JSON(400, gin.H{"error": "Unable to bind json"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get token ID.")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	req.OwnerID = cast.ToInt32(userID)
 
 	err = h.Handler.Create(ctx, &req)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create cafe. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to create cafe"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error().Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
-}
-
-func (h Cafe) GetCafe(c *gin.Context) {
-
 }
 
 type RequestSearchCafe struct {
@@ -57,46 +71,92 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to bind json"})
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
 
 	cafes, err := h.Handler.SearchCafe(ctx, req.Name, req.Province, req.City, req.Category)
 	if err != nil {
 		log.GetLog().Errorf("Unable to search cafe. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to search cafe"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error().Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"cafes": cafes})
+	// if h.FirstSearch.Load() {
+	// 	fileIds := utils.TestUploadImage(cafes)
+	// 	cafesLen := len(fileIds) - 40
+	// 	for i := 0; i < cafesLen; i++ {
+	// 		err = h.ImageRepo.Create(ctx, &models.Image{
+	// 			ID:        fileIds[i],
+	// 			Reference: cafes[i].ID,
+	// 		})
+	// 		if err != nil {
+	// 			log.GetLog().Errorf("Unable to create image")
+	// 			return
+	// 		}
+	// 	}
 
+	// 	for i := 0; i < 30; i++ {
+	// 		err = h.ImageRepo.Create(ctx, &models.Image{
+	// 			ID:        fileIds[cafesLen+i],
+	// 			Reference: int32(i + 61),
+	// 		})
+	// 		if err != nil {
+	// 			log.GetLog().Errorf("Unable to create image")
+	// 			return
+	// 		}
+	// 	}
+
+	// 	for i := 0; i < 10; i++ {
+	// 		err = h.ImageRepo.Create(ctx, &models.Image{
+	// 			ID:        fileIds[cafesLen+30+i],
+	// 			Reference: int32(i + 91),
+	// 		})
+	// 		if err != nil {
+	// 			log.GetLog().Errorf("Unable to create image")
+	// 			return
+	// 		}
+	// 	}
+
+	// 	h.FirstSearch.Store(false)
+	// }
+
+	c.JSON(http.StatusOK, gin.H{"cafes": cafes})
 }
 
-// func (h Cafe) PublicCafeProfile(c *gin.Context) {
-// 	ctx, cancel := context.WithTimeout(c, TimeOut)
-// 	defer cancel()
+func (h Cafe) PublicCafeProfile(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
 
-// 	cafeID := c.GetHeader(http.CanonicalHeaderKey("Cafe-ID"))
-// 	if cafeID == "" {
-// 		log.GetLog().Errorf("cafe id is empty")
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "cafe is is empty"})
-// 		return
-// 	}
+	cafeID := c.Query("cafe_id")
+	cafe_id, err := strconv.Atoi(cafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
 
-// 	cafe, err := h.Handler.PublicCafeProfile(ctx, cafeID)
-// 	if err != nil {
-// 		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
-// 		return
-// 	}
+	var userID int32
+	if userIDValue, exists := c.Get("userID"); exists {
+		userID = userIDValue.(int32)
+	} else {
+		userID = 0
+	}
 
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"status": "ok",
-// 		"cafe":   cafe,
-// 	})
-// 	return
-// }
+	cafe, err := h.Handler.PublicCafeProfile(ctx, int32(cafe_id), userID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get public cafe profile. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+		"cafe":   cafe,
+	})
+	return
+}
 
 type RequestAddComment struct {
 	CafeID  int32  `json:"cafe_id"`
@@ -110,26 +170,26 @@ func (h Cafe) AddComment(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		log.GetLog().Errorf("Unable to bind json. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to bind json."})
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
 
 	userID, exists := c.Get("userID")
 	if !exists {
 		log.GetLog().Errorf("Unable to get token ID.")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to get token ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
 
-	err = h.Handler.AddComment(ctx, req.CafeID, fmt.Sprintf("%v", userID), req.Comment)
+	AddedComment, err := h.Handler.AddComment(ctx, req.CafeID, fmt.Sprintf("%v", userID), req.Comment)
 	if err != nil {
 		log.GetLog().Errorf("Unable to add comment. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to add comment."})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	c.JSON(http.StatusOK, gin.H{"comment": AddedComment})
 	return
 }
 
@@ -137,37 +197,27 @@ func (h Cafe) GetComments(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
 
-	cafeID := c.GetHeader(http.CanonicalHeaderKey("X-Cafe-ID"))
-	if cafeID == "" {
-		log.GetLog().Errorf("cafe id is empty")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cafe id is empty"})
+	CafeID := c.Query("cafe_id")
+	Counter := c.Query("counter")
+
+	cafe_id, err := strconv.Atoi(CafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
 
-	cafe_id, err := strconv.Atoi(cafeID)
+	counter, err := strconv.Atoi(Counter)
 	if err != nil {
-		log.GetLog().Errorf("Invalid cafe id. error: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid cafe id"})
-	}
-
-	apiCallsCounter := c.GetHeader("X-Api-Calls-Counter")
-	if apiCallsCounter == "" {
-		log.GetLog().Errorf("API calls counter is missing")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "API calls counter is missing"})
-		return
-	}
-
-	counter, err := strconv.Atoi(apiCallsCounter)
-	if err != nil {
-		log.GetLog().Errorf("Invalid API calls counter")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid API calls counter"})
+		log.GetLog().Errorf("Unable to convert userID to int32. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
 		return
 	}
 
 	comments, err := h.Handler.GetComments(ctx, int32(cafe_id), counter)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get comments. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get comments"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -175,19 +225,10 @@ func (h Cafe) GetComments(c *gin.Context) {
 	return
 }
 
-type RequestCreateEvent struct {
-	CafeID      int32     `json:"cafe_id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	StartTime   time.Time `json:"start_time"`
-	EndTime     time.Time `json:"end_time"`
-	ImageID     string    `json:"image_id"`
-}
-
 func (h Cafe) CreateEvent(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, TimeOut)
 	defer cancel()
-	var req RequestCreateEvent
+	var req models.Event
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
@@ -196,13 +237,817 @@ func (h Cafe) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	err = h.Handler.CreateEvent(ctx, req.CafeID, req.Name, req.Description, req.StartTime, req.EndTime, req.ImageID)
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	eventID, err := h.Handler.CreateEvent(ctx, req)
 	if err != nil {
 		log.GetLog().Errorf("Unable to create event. error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to create event"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"event_id": eventID})
+	return
+}
+
+func (h Cafe) AddMenuItem(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+	var req models.MenuItem
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	item, err := h.Handler.AddMenuItem(ctx, &req)
+	if err != nil {
+		log.GetLog().Errorf("Unable to add menu item. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"item": item,
+	})
+	return
+}
+
+func (h Cafe) PrivateMenu(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user id")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	cafe, err := h.Handler.CafeRepo.GetByOwnerID(ctx, userID.(int32))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe by id. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error().Error()})
+		return
+	}
+
+	categories, menu, cafeName, cafeImage, err := h.Handler.GetMenu(ctx, cafe.ID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get menu. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"categories": categories,
+		"menu":       menu,
+		"cafe_id":    cafe.ID,
+		"cafe_name":  cafeName,
+		"cafe_image": cafeImage,
+	})
+	return
+}
+
+func (h Cafe) PublicMenu(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	CafeID := c.Query("cafe_id")
+
+	cafe_id, err := strconv.Atoi(CafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to convert cafe id to int32. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	categories, menu, cafeName, cafeImage, err := h.Handler.GetMenu(ctx, int32(cafe_id))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get menu. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"categories": categories,
+		"menu":       menu,
+		"cafe_name":  cafeName,
+		"cafe_image": cafeImage,
+	})
+	return
+}
+
+func (h Cafe) EditMenuItem(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req models.MenuItem
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error()})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	err = h.Handler.EditMenuItem(ctx, req)
+	if err != nil {
+		log.GetLog().Errorf("Unable to edit menu item. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	return
+}
+
+func (h Cafe) DeleteMenuItem(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	Item := c.Query("item")
+	itemID, err := strconv.Atoi(Item)
+	if err != nil {
+		log.GetLog().Errorf("Invalid item type. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	err = h.Handler.DeleteMenuItem(ctx, int32(itemID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete menu item. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
+
+func (h Cafe) Home(c *gin.Context) {
+	cafe, comments, events, err := h.Handler.Home(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"cafes": cafe, "comments": comments, "events": events})
+}
+
+type RequestReserveEvent struct {
+	EventID int32 `json:"event_id"`
+}
+
+func (h Cafe) ReserveEvent(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+	var data RequestReserveEvent
+
+	err := c.ShouldBindJSON(&data)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user id.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	err = h.Handler.ReserveEvent(ctx, data.EventID, userID.(int32))
+	if err != nil {
+		log.GetLog().Errorf("Unable to add menu item. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
+
+func (h Cafe) PrivateCafe(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user id")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	cafe, err := h.Handler.CafeRepo.GetByOwnerID(ctx, userID.(int32))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe by id. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error().Error()})
+		return
+	}
+
+	privateCafe, err := h.Handler.PrivateCafeProfile(ctx, cafe.ID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get private cafe profile. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"cafe": privateCafe,
+	})
+	return
+}
+
+func (h Cafe) EditCafe(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var data modules.RequestEditCafe
+
+	err := c.ShouldBindJSON(&data)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	err = h.Handler.EditCafe(ctx, data)
+	if err != nil {
+		log.GetLog().Errorf("Unable to edit cafe. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
+
+func (h Cafe) EditEvent(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var data models.Event
+
+	err := c.ShouldBindJSON(&data)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	err = h.Handler.EditEvent(ctx, data)
+	if err != nil {
+		log.GetLog().Errorf("Unable to edit event. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
+
+func (h Cafe) DeleteEvent(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	event_id := c.Query("id")
+	eventID, err := strconv.Atoi(event_id)
+	if err != nil {
+		log.GetLog().Errorf("Invalid event id. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	err = h.Handler.DeleteEvent(ctx, int32(eventID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to delete event. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
+
+func (h Cafe) GetFullyBookedDays(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	cafeID, err := strconv.Atoi(c.Query("cafe_id"))
+	if err != nil {
+		log.GetLog().Errorf("Unable to convert cafe id. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid cafe_id"})
+		return
+	}
+
+	startDate := time.Now()
+
+	days, err := h.Handler.GetFullyBookedDays(ctx, int32(cafeID), startDate)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get fully booked days. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"fully_booked_days": days})
+	return
+}
+
+func (h Cafe) GetTimeSlots(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	cafeID, err := strconv.Atoi(c.Query("cafe_id"))
+	if err != nil {
+		log.GetLog().Errorf("Unable to convert cafe id. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid cafe_id"})
+		return
+	}
+
+	dayStr := c.Query("day")
+	day, err := time.Parse("2006-01-02", dayStr)
+	if err != nil {
+		log.GetLog().Errorf("Unable to parse day. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid day format"})
+		return
+	}
+
+	slots, err := h.Handler.GetAvailableTimeSlots(ctx, int32(cafeID), day)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get available time slots. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"time_slots": slots})
+	return
+}
+
+type RequestReserveCafe struct {
+	CafeID    int32  `json:"cafe_id"`
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+	People    int32  `json:"people"`
+}
+
+func (h Cafe) ReserveCafe(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req RequestReserveCafe
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind JSON")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Error("Unable to get userID from context")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	startTime, err := time.Parse(time.RFC3339, req.StartTime)
+	if err != nil {
+		log.GetLog().Errorf("Unable to parse start time. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start_time format"})
+		return
+	}
+
+	endTime, err := time.Parse(time.RFC3339, req.EndTime)
+	if err != nil {
+		log.GetLog().Errorf("Unable to parse end time. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end_time format"})
+		return
+	}
+
+	reservation := models.Reservation{
+		UserID:    cast.ToInt32(userID),
+		CafeID:    req.CafeID,
+		StartTime: startTime,
+		EndTime:   endTime,
+		People:    req.People,
+	}
+
+	err = h.Handler.ReserveCafe(ctx, &reservation)
+	if err != nil {
+		log.GetLog().Errorf("Unable to reserve cafe. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
+
+type RequestNearestCafes struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	Radius    float64 `json:"radius"`
+}
+
+func (h Cafe) GetNearestCafes(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req RequestNearestCafes
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind JSON")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	cafes, err := h.Handler.GetNearestCafes(ctx, req.Latitude, req.Longitude, req.Radius)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get nearest cafes. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"cafes": cafes})
+}
+
+func (h Cafe) SetCafeLocation(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req models.Location
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind JSON")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	err = h.Handler.SetCafeLocation(ctx, &req)
+	if err != nil {
+		log.GetLog().Errorf("Unable to set cafe location. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+type RequestGetCafeLocation struct {
+	CafeID int32 `json:"cafe_id"`
+}
+
+func (h Cafe) GetCafeLocation(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req RequestGetCafeLocation
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind JSON")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	cafe, err := h.Handler.GetCafeLocation(ctx, req.CafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe location. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": cafe})
+}
+
+func (h Cafe) GetCafeReservations(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	dayStr := c.Query("day")
+	day, err := time.Parse("2006-01-02", dayStr)
+	if err != nil {
+		log.GetLog().Errorf("Unable to parse day. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid day format"})
+		return
+	}
+
+	role, exists := c.Get("role")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user role")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	if role.(int32) != 2 {
+		c.JSON(http.StatusForbidden, gin.H{"error": errors.ErrForbidden.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Errorf("Unable to get user id")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrUnableToGetUser.Error().Error()})
+		return
+	}
+
+	cafe, err := h.Handler.CafeRepo.GetByOwnerID(ctx, userID.(int32))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe by id. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errors.ErrInternalError.Error().Error()})
+		return
+	}
+
+	reservations, err := h.Handler.GetCafeReservations(ctx, cafe, day)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get cafe reservations. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"cafe_reservations": reservations})
+	return
+}
+
+func (h Cafe) AddToFavorite(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req models.Favorite
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind JSON")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Error("Unable to get userID from context")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	err = h.Handler.AddToFavorite(ctx, userID.(int32), req.CafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to add to favorite. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
+
+func (h Cafe) RemoveFavorite(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req models.Favorite
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind JSON")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Error("Unable to get userID from context")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	err = h.Handler.RemoveFavorite(ctx, userID.(int32), req.CafeID)
+	if err != nil {
+		log.GetLog().Errorf("Unable to remove from favorite. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	return
+}
+
+type RequestAddRating struct {
+	CafeID int32 `json:"cafe_id"`
+	Rating int32 `json:"rating"`
+}
+
+func (h Cafe) AddRating(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	var req RequestAddRating
+
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		log.GetLog().WithError(err).Error("Unable to bind JSON")
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Error("Unable to get userID from context")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	err = h.Handler.AddRating(ctx, cast.ToInt32(userID), req.CafeID, req.Rating)
+	if err != nil {
+		log.GetLog().Errorf("Unable to add rating. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+
+}
+
+type ResponseGetRating struct {
+	Rating float64 `json:"rating"`
+	MyRate int32   `json:"my_rate"`
+}
+
+func (h Cafe) GetRating(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	cafeID, err := strconv.Atoi(c.Query("cafe_id"))
+	if err != nil {
+		log.GetLog().Errorf("Invalid cafe id. error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrBadRequest.Error().Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Error("Unable to get userID from context")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	rating, myRate, err := h.Handler.GetRating(ctx, cast.ToInt32(userID), int32(cafeID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get rating. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"rating": ResponseGetRating{Rating: rating, MyRate: myRate}})
+}
+
+func (h Cafe) GetFavoriteList(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, TimeOut)
+	defer cancel()
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.GetLog().Error("Unable to get userID from context")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	favorites, err := h.Handler.GetFavoriteList(ctx, cast.ToInt32(userID))
+	if err != nil {
+		log.GetLog().Errorf("Unable to get favorite list. error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	for i, cafe := range favorites {
+		favorites[i].Rating, err = h.Rating.GetCafesRating(ctx, cafe.ID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get cafe rating. error: %v", err)
+		}
+	}
+
+	for i := range favorites {
+		images, err := h.ImageRepo.GetByReferenceID(ctx, favorites[i].ID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get cafe images. error: %v", err)
+			continue
+		}
+
+		for _, image := range images {
+			favorites[i].Images = append(favorites[i].Images, image.ID)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"favorites": favorites})
+
 }

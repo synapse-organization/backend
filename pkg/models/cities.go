@@ -18,8 +18,8 @@ type City struct {
 }
 
 var Provinces = []Province{}
-var cities = []City{}
-var Cities = map[int][]City{}
+var Cities = []City{}
+var ProvinceCities = map[int][]City{}
 
 func init() {
 	file, err := os.Open("assets/ostan.json")
@@ -43,13 +43,13 @@ func init() {
 	defer file.Close()
 
 	decoder = json.NewDecoder(file)
-	err = decoder.Decode(&cities)
+	err = decoder.Decode(&Cities)
 	if err != nil {
 		panic(err)
 	}
 
-	for _, city := range cities {
-		Cities[city.ProvinceID] = append(Cities[city.ProvinceID], city)
+	for _, city := range Cities {
+		ProvinceCities[city.ProvinceID] = append(ProvinceCities[city.ProvinceID], city)
 	}
 	log.GetLog().Info("Provinces loaded successfully")
 	log.GetLog().Info("Cities loaded successfully")

@@ -49,3 +49,39 @@ var MenuItemCategoryPersians = map[MenuItemCategory]string{
 	MenuItemCategoryDessert:   "دسر",
 	MenuItemCategoryDrink:     "نوشیدنی",
 }
+
+type AmenityCategory string
+
+const (
+	AmenityCategoryWiFi              AmenityCategory = "wifi"
+	AmenityCategoryTV                AmenityCategory = "tv"
+	AmenityCategoryOutdoorSeating    AmenityCategory = "outdoor_seating"
+	AmenityCategoryParking           AmenityCategory = "parking"
+	AmenityCategoryLiveMusic         AmenityCategory = "live_music"
+	AmenityCategoryBoardGames        AmenityCategory = "board_games"
+	AmenityCategoryPetFriendly       AmenityCategory = "pet_friendly"
+	AmenityCategoryHookah            AmenityCategory = "hookah"
+	AmenityCategoryFreeSmoke         AmenityCategory = "free_smoke"
+	AmenityCategoryVegetarianOptions AmenityCategory = "vegetarian_options"
+	AmenityCategoryVeganOptions      AmenityCategory = "vegan_options"
+	AmenityCategoryWheelchairAccess  AmenityCategory = "wheelchair_access"
+	AmenityCategoryMeetingRooms      AmenityCategory = "meeting_rooms"
+	AmenityCategoryWorkingSpace      AmenityCategory = "working_space"
+)
+
+var AmenityCategoryPersians = map[AmenityCategory]string{
+	AmenityCategoryWiFi:              "وای فای",
+	AmenityCategoryTV:                "تلویزیون",
+	AmenityCategoryOutdoorSeating:    "فضای نشستن بیرون",
+	AmenityCategoryParking:           "پارکینگ",
+	AmenityCategoryLiveMusic:         "موسیقی زنده",
+	AmenityCategoryBoardGames:        "بردگیم",
+	AmenityCategoryPetFriendly:       "اجازه ورود حیوانات خانگی",
+	AmenityCategoryHookah:            "قلیان",
+	AmenityCategoryFreeSmoke:         "دود آزاد",
+	AmenityCategoryVegetarianOptions: "غذای گیاهی",
+	AmenityCategoryVeganOptions:      "غذای وگان",
+	AmenityCategoryWheelchairAccess:  "دسترسی برای معلولان",
+	AmenityCategoryMeetingRooms:      "اتاق جلسه",
+	AmenityCategoryWorkingSpace:      "فضای کاری",
+}

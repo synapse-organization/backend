@@ -16,7 +16,8 @@ type UsersRepo interface {
 	Create(ctx context.Context, user *models.User) error
 	Verify(ctx context.Context, email string) error
 	GetByID(ctx context.Context, id int32) (*models.User, error)
-	GetByEmail(ctx context.Context, email string) (*models.User, error)
+	GetByEmail(ctx context.Context, email string) ([]*models.User, error)
+	GetBalance(ctx context.Context, id int32) (int64, error)
 	DeleteByID(ctx context.Context, id int32) error
 	UpdateFirstName(ctx context.Context, id int32, newFirstName string) error
 	UpdateLastName(ctx context.Context, id int32, newLastName string) error
@@ -44,19 +45,52 @@ func NewUserRepoImp(postgres *pgxpool.Pool) *UserRepoImp {
     			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     			is_verified BOOLEAN DEFAULT FALSE,
     			user_role INT DEFAULT 1,
+    			balance BIGINT DEFAULT 0,
     			extra_info JSONB,
-    			UNIQUE(email))`)
+    			UNIQUE(email, user_role))`)
 
 	if err != nil {
 		log.GetLog().WithError(err).WithField("table", "users").Fatal("Unable to create table")
 	}
 
-	_, err = postgres.Exec(context.Background(), `INSERT INTO users (id) VALUES (12) ON CONFLICT DO NOTHING`)
+	_, err = postgres.Exec(context.Background(), `INSERT INTO users (id, first_name, last_name, email, password, phone, sex, is_verified, user_role, balance, extra_info)
+			VALUES
+			(31, 'Dan', 'Adams', 'dan.adams@gmail.com', '$2a$10$examplehash30', 34509845678, 1, true, 2, 1000, '{}'),
+			(32, 'Alice', 'Smith', 'alice.smith@gmail.com', '$2a$10$examplehash1', 12345678901, 2, true, 2, 1000, '{}'),
+			(33, 'Bob', 'Johnson', 'bob.johnson@gmail.com', '$2a$10$examplehash2', 23456789012, 1, true, 2, 1000, '{}'),
+			(34, 'Carol', 'Williams', 'carol.williams@gmail.com', '$2a$10$examplehash3', 34567890123, 2, true, 2, 1000, '{}'),
+			(35, 'David', 'Brown', 'david.brown@gmail.com', '$2a$10$examplehash4', 45678901234, 1, true, 2, 1000, '{}'),
+			(36, 'Eve', 'Jones', 'eve.jones@gmail.com', '$2a$10$examplehash5', 56789012345, 2, true, 2, 1000, '{}'),
+			(37, 'Frank', 'Garcia', 'frank.garcia@gmail.com', '$2a$10$examplehash6', 67890123456, 1, true, 2, 1000, '{}'),
+			(38, 'Grace', 'Martinez', 'grace.martinez@gmail.com', '$2a$10$examplehash7', 78901234567, 2, true, 2, 1000, '{}'),
+			(39, 'Hank', 'Davis', 'hank.davis@gmail.com', '$2a$10$examplehash8', 89012345678, 1, true, 2, 1000, '{}'),
+			(40, 'Ivy', 'Rodriguez', 'ivy.rodriguez@gmail.com', '$2a$10$examplehash9', 90123456789, 2, true, 2, 1000, '{}'),
+			(41, 'Jack', 'Martinez', 'jack.martinez@gmail.com', '$2a$10$examplehash10', 12309845678, 1, true, 2, 1000, '{}'),
+			(42, 'Karen', 'Hernandez', 'karen.hernandez@gmail.com', '$2a$10$examplehash11', 23410956789, 2, true, 2, 1000, '{}'),
+			(43, 'Leo', 'Lopez', 'leo.lopez@gmail.com', '$2a$10$examplehash12', 34521067890, 1, true, 2, 1000, '{}'),
+			(44, 'Mia', 'Gonzalez', 'mia.gonzalez@gmail.com', '$2a$10$examplehash13', 45632178901, 2, true, 2, 1000, '{}'),
+			(45, 'Nate', 'Wilson', 'nate.wilson@gmail.com', '$2a$10$examplehash14', 56743289012, 1, true, 2, 1000, '{}')
+			ON CONFLICT DO NOTHING;
+	`)
+	if err != nil {
+		log.GetLog().Errorf("Unable to insert users. error: %v", err)
+	}
+
 	return &UserRepoImp{postgres: postgres}
 }
 
 func (u *UserRepoImp) Create(ctx context.Context, user *models.User) error {
-	_, err := u.postgres.Exec(ctx, "INSERT INTO users (id, first_name, last_name, email, password, phone, sex, user_role) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", user.ID, user.FirstName, user.LastName, user.Email, user.Password, user.Phone, user.Sex, user.Role)
+	newExtraInfo := map[string]interface{}{
+		"bank_account": user.BankAccount,
+		"national_id":  user.NationalID,
+	}
+	data, err := json.Marshal(newExtraInfo)
+	if err != nil {
+		log.GetLog().Errorf("Unable to marshal extra info. error: %v", err)
+		return err
+	}
+
+	_, err = u.postgres.Exec(ctx, "INSERT INTO users (id, first_name, last_name, email, password, phone, sex, user_role, extra_info) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)", user.ID, user.FirstName, user.LastName, user.Email, user.Password, user.Phone, user.Sex, user.Role, data)
 	if err != nil {
 		log.GetLog().Errorf("Unable to intser user. error: %v", err)
 	}
@@ -73,20 +107,39 @@ func (u *UserRepoImp) Verify(ctx context.Context, email string) error {
 
 func (u *UserRepoImp) GetByID(ctx context.Context, id int32) (*models.User, error) {
 	var user models.User
-	err := u.postgres.QueryRow(ctx, "SELECT id, first_name, last_name, email, password, phone, sex, user_role FROM users WHERE id = $1", id).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex, &user.Role)
+	err := u.postgres.QueryRow(ctx, "SELECT id, first_name, last_name, email, password, phone, sex, user_role, balance, extra_info->>'bank_account', extra_info->>'national_id' FROM users WHERE id = $1", id).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex, &user.Role, &user.Balance, &user.BankAccount, &user.NationalID)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get user by id. error: %v", err)
 	}
 	return &user, err
 }
 
-func (u *UserRepoImp) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-	var user models.User
-	err := u.postgres.QueryRow(ctx, "SELECT id, first_name, last_name, email, password, phone, sex, user_role FROM users WHERE email = $1", email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex, &user.Role)
+func (u *UserRepoImp) GetByEmail(ctx context.Context, email string) ([]*models.User, error) {
+	var users []*models.User
+	rows, err := u.postgres.Query(ctx, "SELECT id, first_name, last_name, email, password, phone, sex, user_role, balance, is_verified, extra_info->>'bank_account', extra_info->>'national_id' FROM users WHERE email = $1", email)
 	if err != nil {
-		log.GetLog().Errorf("Unable to get user by id. error: %v", err)
+		log.GetLog().Errorf("Unable to get user by email. error: %v", err)
+		return nil, err
 	}
-	return &user, err
+	defer rows.Close()
+	for rows.Next() {
+		var user models.User
+		err = rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Phone, &user.Sex, &user.Role, &user.Balance, &user.IsVerified, &user.BankAccount, &user.NationalID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to scan user. error: %v", err)
+			return nil, err
+		}
+		users = append(users, &user)
+	}
+	return users, nil
+}
+func (u *UserRepoImp) GetBalance(ctx context.Context, id int32) (int64, error) {
+	var balance int64
+	err := u.postgres.QueryRow(ctx, "SELECT balance FROM users WHERE id = $1", id).Scan(&balance)
+	if err != nil {
+		log.GetLog().Errorf("Unable to get balance by id. error: %v", err)
+	}
+	return balance, err
 }
 
 func (u *UserRepoImp) DeleteByID(ctx context.Context, id int32) error {

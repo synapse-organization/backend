@@ -6,7 +6,9 @@ import (
 	"barista/pkg/models"
 	"context"
 	"math/rand"
+	"net"
 	"net/mail"
+	"os"
 	"strings"
 	"time"
 
@@ -16,7 +18,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func GenerateRandomPassword(length int) string {
+func GenerateRandomStr(length int) string {
 	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	password := make([]byte, length)
@@ -109,4 +111,91 @@ func CheckStartTime(startTime time.Time) bool {
 
 func CheckEndTime(startTime time.Time, endTime time.Time) bool {
 	return (endTime.After(time.Now()) && endTime.After(startTime))
+}
+
+func AppendIfNotExists(slice []string, str string) []string {
+	for _, s := range slice {
+		if s == str {
+			return slice
+		}
+	}
+	return append(slice, str)
+}
+
+func CheckCafeTimeValidity(cafeTime int8) bool {
+	return cafeTime >= 0 && cafeTime <= 23
+}
+
+func CheckCapacityValidity(capacity int32) bool {
+	return capacity > 0
+}
+
+func CheckPriceValidity(price float64) bool {
+	return price >= 0
+}
+
+func CheckReservability(preReserve bool, newReserve bool, preCapacity int32, newCapacity int32, attendees int32) (bool, bool, error) {
+	updateCapacity := false
+	updateReserve := false
+	if !preReserve {
+		if newCapacity > preCapacity {
+			updateCapacity = true
+			updateReserve = true
+		} else {
+			return updateCapacity, updateReserve, errors.ErrCapacityInvalid.Error()
+		}
+	} else {
+		if newCapacity < attendees {
+			return updateCapacity, updateReserve, errors.ErrCapacityInvalid.Error()
+		} else if newCapacity == attendees {
+			updateCapacity = true
+			updateReserve = true
+		} else {
+			updateCapacity = true
+		}
+	}
+
+	return updateCapacity, updateReserve, nil
+}
+
+func getBaseURL() (string, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "", err
+	}
+
+	addrs, err := net.LookupIP(hostname)
+	if err != nil {
+		return "", err
+	}
+
+	for _, addr := range addrs {
+		if ipv4 := addr.To4(); ipv4 != nil && !ipv4.IsLoopback() {
+			if ipv4.String() == "127.0.0.1" {
+				return "http://localhost:8080", nil
+			}
+			return "http://" + ipv4.String() + ":8080", nil
+		}
+	}
+
+	return "http://localhost:8080", nil
+}
+
+func GetIP() string {
+	return "82.115.24.199"
+	// Get the IP addresses associated with the host running the application
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		panic(err)
+	}
+
+	// Iterate over the addresses and find the IP address
+	for _, addr := range addrs {
+		ipNet, ok := addr.(*net.IPNet)
+		if ok && !ipNet.IP.IsLoopback() && ipNet.IP.To4() != nil {
+			ipAddress := ipNet.IP.String()
+			return ipAddress
+		}
+	}
+	return ""
 }

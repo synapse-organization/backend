@@ -26,6 +26,20 @@ services:
         resources:
             limits:
               memory: 200M
+  redis:
+    image: redis
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - 6379:6379
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+      resources:
+        limits:
+          memory: 400M
   postgres_backend:
     image: postgres:alpine3.19
     volumes:
