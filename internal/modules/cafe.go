@@ -396,7 +396,7 @@ func (c CafeHandler) GetComments(ctx context.Context, cafeID int32, counter int)
 	return commentsWithNames, err
 }
 
-func (c CafeHandler) CreateEvent(ctx context.Context, event models.Event)  (int32, error) {
+func (c CafeHandler) CreateEvent(ctx context.Context, event models.Event) (int32, error) {
 	start_time := event.StartTime.UTC()
 	end_time := event.EndTime.UTC()
 
@@ -660,6 +660,17 @@ func (c CafeHandler) Home(ctx context.Context) ([]models.Cafe, []*models.Comment
 			continue
 		}
 		event[i].CafeName = ds[0].Name
+
+		images, err := c.ImageRepo.GetByReferenceID(ctx, event[i].ID)
+		if err != nil {
+			log.GetLog().Errorf("Unable to get images by event id. error: %v", err)
+			continue
+		}
+
+		if images != nil {
+			event[i].ImageID = images[0].ID
+		}
+
 	}
 
 	return ds, comments, event, nil
