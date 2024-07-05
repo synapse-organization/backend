@@ -648,32 +648,32 @@ func (c CafeHandler) Home(ctx context.Context) ([]models.Cafe, []*models.Comment
 		return nil, nil, nil, err
 	}
 
-	event, err := c.EventRepo.GetAllEventsNearestStartTime(ctx, 5)
+	events, err := c.EventRepo.GetAllEventsNearestStartTime(ctx, 5)
 	if err != nil {
 		log.GetLog().Errorf("Unable to get home events. error: %v", err)
 		return nil, nil, nil, err
 	}
 
-	for i := range event {
-		ds, err := c.CafeRepo.GetByCafeIDs(ctx, []int32{event[i].CafeID})
+	for i, event := range events {
+		ds, err := c.CafeRepo.GetByCafeIDs(ctx, []int32{event.CafeID})
 		if err != nil {
 			continue
 		}
-		event[i].CafeName = ds[0].Name
+		events[i].CafeName = ds[0].Name
 
-		images, err := c.ImageRepo.GetByReferenceID(ctx, event[i].ID)
+		images, err := c.ImageRepo.GetByReferenceID(ctx, event.ID)
 		if err != nil {
 			log.GetLog().Errorf("Unable to get images by event id. error: %v", err)
 			continue
 		}
 
 		if images != nil {
-			event[i].ImageID = images[0].ID
+			events[i].ImageID = images[0].ID
 		}
 
 	}
 
-	return ds, comments, event, nil
+	return ds, comments, events, nil
 }
 
 func (c CafeHandler) ReserveEvent(ctx context.Context, eventID int32, userID int32) error {
