@@ -73,7 +73,7 @@ func (u UserHandler) SignUp(ctx context.Context, user *models.User) error {
 		emailBody := fmt.Sprintf(`Hello %s,<br><br>
 	To verify your email address, please click the link below:<br><br>
 	
-	<a href="http://%s:8080/api/user/verify-email?c=%s&callback=http://localhost:5173">Verify Email</a><br><br>
+	<a href="http://%s:8080/api/user/verify-email?c=%s&callback=http://localhost:5173/login">Verify Email</a><br><br>
 
 	Yours,<br>
 	The Synapse team`, user.FirstName, utils.GetIP(), encryptedEmail)
