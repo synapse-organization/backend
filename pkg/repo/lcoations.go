@@ -30,7 +30,8 @@ func NewLocationsRepoImp(postgres *pgxpool.Pool) *LocationsRepoImp {
 
 	_, err = postgres.Exec(context.Background(), `INSERT INTO locations (id, latitude, longitude)
 			VALUES
-			(1, 35.7019233, 51.4054430);
+			(1, 35.7019233, 51.4054430)
+			ON CONFLICT DO NOTHING;
 	`)
 
 	if err != nil {
