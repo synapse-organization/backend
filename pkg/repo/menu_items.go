@@ -46,16 +46,17 @@ func NewMenuItemRepoImp(postgres *pgxpool.Pool) *MenuItemsRepoImp {
 
 	_, err = postgres.Exec(context.Background(), `INSERT INTO menu_items (id, cafe_id, name, price, category, ingredients)
 		VALUES
-		(91, 1, 'Espresso', 30000.0, 'coffee', 'Water, Coffee beans'),
-		(92, 1, 'Cappuccino', 40000.0, 'coffee', 'Espresso, Milk, Milk foam'),
-		(93, 1, 'Latte', 40000.0, 'coffee', 'Espresso, Steamed milk, Milk foam'),
-		(94, 1, 'Green Tea', 25000.0, 'tea', 'Green tea leaves, Water'),
-		(95, 1, 'Chai Latte', 3.5, 'tea', 'Black tea, Spices, Milk, Water'),
-		(96, 1, 'Blueberry Muffin', 2.5, 'dessert', 'Flour, Sugar, Blueberries, Eggs, Butter, Baking powder'),
-		(97, 1, 'Chocolate Cake', 3.0, 'dessert', 'Flour, Sugar, Cocoa powder, Eggs, Butter, Baking powder'),
-		(98, 1, 'Caesar Salad', 5.0, 'appetizer', 'Romaine lettuce, Croutons, Parmesan cheese, Caesar dressing'),
-		(99, 1, 'Grilled Cheese Sandwich', 4.0, 'main_dish', 'Bread, Cheese, Butter'),
-		(100, 1, 'Iced Coffee', 3.5, 'drink', 'Coffee, Ice, Milk, Sugar')
+		(91, 1, '50000.0, 'coffee', 'آب, دانه های قهوه'),
+		(92, 1, 'کاپوچینو', 70000.0, 'coffee', 'اسپرسو, شیر, فوم'),
+		(93, 1, 'لاته', 70000.0, 'coffee', 'اسپرسو, شیر, فوم'),
+		(94, 1, 'چای سبز', 60000.0, 'tea', 'برگ چای سبز, آب'),
+		(95, 1, 'چای لاته', 65000.0, 'tea', 'چای سیاه, ادویه, شیر, آب'),
+		(96, 1, 'مافین بلوبری', 60000.0, 'dessert', 'آرد, شکر, بلوبری, تخم مرغ, کره, بکینگ پودر'),
+		(97, 1, 'کیک شکلاتی', 55000.0, 'dessert', 'آرد, شکر, پودر کاکائو, تخم مرغ, کره, بکینگ پودر'),
+		(98, 1, 'سالاد سزار', 130000.0, 'appetizer', 'کاهو, کروتون, پنیز پارمزان, چاشنی سزار'),
+		(99, 1, 'ساندویچ مرغ کبابی', 160000.0, 'main_dish', 'نان, پنیر, کره, مرغ'),
+		(100, 1, 'پیتزا مارگاریتا', 220000.0, 'main_dish', 'موزارلا، گوجه گیلاسی، ريحان ایتالیایی، سس مارينارا')
+		(101, 1, 'لمون بری', 105000.0, 'drink', 'لیمو, پوره میوه های قرمز, سودا')
 		ON CONFLICT DO NOTHING;
 	`)
 	if err != nil {

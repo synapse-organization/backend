@@ -69,22 +69,7 @@ func NewUserRepoImp(postgres *pgxpool.Pool) *UserRepoImp {
 			(42, 'Karen', 'Hernandez', 'karen.hernandez@gmail.com', '$2a$10$examplehash11', 23410956789, 2, true, 2, 1000, '{}'),
 			(43, 'Leo', 'Lopez', 'leo.lopez@gmail.com', '$2a$10$examplehash12', 34521067890, 1, true, 2, 1000, '{}'),
 			(44, 'Mia', 'Gonzalez', 'mia.gonzalez@gmail.com', '$2a$10$examplehash13', 45632178901, 2, true, 2, 1000, '{}'),
-			(45, 'Nate', 'Wilson', 'nate.wilson@gmail.com', '$2a$10$examplehash14', 56743289012, 1, true, 2, 1000, '{}'),
-			(46, 'Olivia', 'Anderson', 'olivia.anderson@gmail.com', '$2a$10$examplehash15', 67854390123, 2, true, 2, 1000, '{}'),
-			(47, 'Paul', 'Thomas', 'paul.thomas@gmail.com', '$2a$10$examplehash16', 78965401234, 1, true, 2, 1000, '{}'),
-			(48, 'Quincy', 'Taylor', 'quincy.taylor@gmail.com', '$2a$10$examplehash17', 89076512345, 2, true, 2, 1000, '{}'),
-			(49, 'Rose', 'Moore', 'rose.moore@gmail.com', '$2a$10$examplehash18', 90187623456, 1, true, 2, 1000, '{}'),
-			(50, 'Sam', 'Jackson', 'sam.jackson@gmail.com', '$2a$10$examplehash19', 12398734567, 2, true, 2, 1000, '{}'),
-			(51, 'Tina', 'Martin', 'tina.martin@gmail.com', '$2a$10$examplehash20', 23409845678, 1, true, 2, 1000, '{}'),
-			(52, 'Uma', 'Lee', 'uma.lee@gmail.com', '$2a$10$examplehash21', 34510956789, 2, true, 2, 1000, '{}'),
-			(53, 'Vince', 'Perez', 'vince.perez@gmail.com', '$2a$10$examplehash22', 45621067890, 1, true, 2, 1000, '{}'),
-			(54, 'Wendy', 'Clark', 'wendy.clark@gmail.com', '$2a$10$examplehash23', 56732178901, 2, true, 2, 1000, '{}'),
-			(55, 'Xander', 'Lewis', 'xander.lewis@gmail.com', '$2a$10$examplehash24', 67843289012, 1, true, 2, 1000, '{}'),
-			(56, 'Yara', 'Walker', 'yara.walker@gmail.com', '$2a$10$examplehash25', 78954390123, 2, true, 2, 1000, '{}'),
-			(57, 'Zane', 'Hall', 'zane.hall@gmail.com', '$2a$10$examplehash26', 89065401234, 1, true, 2, 1000, '{}'),
-			(58, 'Amy', 'King', 'amy.king@gmail.com', '$2a$10$examplehash27', 90176512345, 2, true, 2, 1000, '{}'),
-			(59, 'Ben', 'Scott', 'ben.scott@gmail.com', '$2a$10$examplehash28', 12387623456, 1, true, 2, 1000, '{}'),
-			(60, 'Chloe', 'Green', 'chloe.green@gmail.com', '$2a$10$examplehash29', 23498734567, 2, true, 2, 1000, '{}')
+			(45, 'Nate', 'Wilson', 'nate.wilson@gmail.com', '$2a$10$examplehash14', 56743289012, 1, true, 2, 1000, '{}')
 			ON CONFLICT DO NOTHING;
 	`)
 	if err != nil {
