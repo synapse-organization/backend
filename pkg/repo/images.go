@@ -24,7 +24,7 @@ type ImageRepoImp struct {
 func NewImageRepoImp(postgres *pgxpool.Pool) *ImageRepoImp {
 	_, err := postgres.Exec(context.Background(),
 		`CREATE TABLE IF NOT EXISTS images (
-				id TEXT PRIMARY KEY,
+				id TEXT,
 				reference_id INTEGER,
 				create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);`)
@@ -111,7 +111,7 @@ func (r *ImageRepoImp) GetMainImage(ctx context.Context, referenceID int32) (str
 	if err != nil {
 		if err.Error() == "no rows in result set" {
 			imageID = ""
-		}else {
+		} else {
 			log.GetLog().Errorf("Unable to get main image. error: %v", err)
 			return "", err
 		}
