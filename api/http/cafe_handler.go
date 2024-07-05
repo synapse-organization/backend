@@ -6,13 +6,13 @@ import (
 	"barista/pkg/log"
 	"barista/pkg/models"
 	"barista/pkg/repo"
-	"barista/pkg/utils"
 	"context"
 	"fmt"
-	"go.uber.org/atomic"
 	"net/http"
 	"strconv"
 	"time"
+
+	"go.uber.org/atomic"
 
 	"github.com/spf13/cast"
 
@@ -83,44 +83,44 @@ func (h Cafe) SearchCafe(c *gin.Context) {
 		return
 	}
 
-	if h.FirstSearch.Load() {
-		fileIds := utils.TestUploadImage(cafes)
-		cafesLen := len(fileIds) - 40
-		for i := 0; i < cafesLen; i++ {
-			err = h.ImageRepo.Create(ctx, &models.Image{
-				ID:        fileIds[i],
-				Reference: cafes[i].ID,
-			})
-			if err != nil {
-				log.GetLog().Errorf("Unable to create image")
-				return
-			}
-		}
+	// if h.FirstSearch.Load() {
+	// 	fileIds := utils.TestUploadImage(cafes)
+	// 	cafesLen := len(fileIds) - 40
+	// 	for i := 0; i < cafesLen; i++ {
+	// 		err = h.ImageRepo.Create(ctx, &models.Image{
+	// 			ID:        fileIds[i],
+	// 			Reference: cafes[i].ID,
+	// 		})
+	// 		if err != nil {
+	// 			log.GetLog().Errorf("Unable to create image")
+	// 			return
+	// 		}
+	// 	}
 
-		for i := 0; i < 30; i++ {
-			err = h.ImageRepo.Create(ctx, &models.Image{
-				ID:        fileIds[cafesLen+i],
-				Reference: int32(i + 61),
-			})
-			if err != nil {
-				log.GetLog().Errorf("Unable to create image")
-				return
-			}
-		}
+	// 	for i := 0; i < 30; i++ {
+	// 		err = h.ImageRepo.Create(ctx, &models.Image{
+	// 			ID:        fileIds[cafesLen+i],
+	// 			Reference: int32(i + 61),
+	// 		})
+	// 		if err != nil {
+	// 			log.GetLog().Errorf("Unable to create image")
+	// 			return
+	// 		}
+	// 	}
 
-		for i := 0; i < 10; i++ {
-			err = h.ImageRepo.Create(ctx, &models.Image{
-				ID:        fileIds[cafesLen+30+i],
-				Reference: int32(i + 91),
-			})
-			if err != nil {
-				log.GetLog().Errorf("Unable to create image")
-				return
-			}
-		}
+	// 	for i := 0; i < 10; i++ {
+	// 		err = h.ImageRepo.Create(ctx, &models.Image{
+	// 			ID:        fileIds[cafesLen+30+i],
+	// 			Reference: int32(i + 91),
+	// 		})
+	// 		if err != nil {
+	// 			log.GetLog().Errorf("Unable to create image")
+	// 			return
+	// 		}
+	// 	}
 
-		h.FirstSearch.Store(false)
-	}
+	// 	h.FirstSearch.Store(false)
+	// }
 
 	c.JSON(http.StatusOK, gin.H{"cafes": cafes})
 }
